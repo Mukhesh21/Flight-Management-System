@@ -1,0 +1,53 @@
+{% extends 'base.html' %}
+
+{% block title %}Passenger Accounts Registry - SkyWings Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-people me-2 text-primary"></i>Registered Passengers Directory</h3>
+            <small class="text-muted">Centralized profiles, contact information, and travel documents</small>
+        </div>
+    </div>
+
+    <div class="fms-card">
+        <div class="fms-card-body p-0">
+            <div class="table-responsive">
+                <table class="fms-table">
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Full Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Frequent Flyer ID</th>
+                            <th>Passport / ID</th>
+                            <th>Nationality</th>
+                            <th>Total Bookings</th>
+                            <th>Joined Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in passengers %}
+                        <tr>
+                            <td>#{{ p.id }}</td>
+                            <td class="fw-bold text-dark">{{ p.full_name }}</td>
+                            <td><code>{{ p.username }}</code></td>
+                            <td>{{ p.email }}</td>
+                            <td>{{ p.phone or '-' }}</td>
+                            <td><span class="badge bg-warning-subtle text-dark font-monospace">{{ p.passenger_profile.frequent_flyer_no if p.passenger_profile else 'N/A' }}</span></td>
+                            <td>{{ p.passenger_profile.passport_number if p.passenger_profile else '-' }}</td>
+                            <td>{{ p.passenger_profile.nationality if p.passenger_profile else 'Indian' }}</td>
+                            <td><span class="badge bg-primary">{{ p.bookings.count() }}</span></td>
+                            <td class="small text-muted">{{ p.created_at.strftime('%b %d, %Y') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

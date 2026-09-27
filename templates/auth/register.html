@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Register - SkyWings Smart Flight Management{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-6 col-md-8">
+            <div class="fms-card shadow-lg border-0">
+                <div class="fms-card-header bg-primary text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold text-white"><i class="bi bi-person-plus me-2"></i>Create Account</h4>
+                        <small class="text-white-50">Join SkyWings Airlines Passenger & Flight Platform</small>
+                    </div>
+                    <i class="bi bi-airplane-engines fs-2 text-info"></i>
+                </div>
+                <div class="fms-card-body p-4">
+                    <form action="{{ url_for('auth.register') }}" method="POST">
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Username *</label>
+                                <input type="text" name="username" class="form-control" placeholder="Choose unique username" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Full Name *</label>
+                                <input type="text" name="full_name" class="form-control" placeholder="e.g. Mukhesh P" required>
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Email Address *</label>
+                                <input type="email" name="email" class="form-control" placeholder="name@example.com" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Phone Number</label>
+                                <input type="text" name="phone" class="form-control" placeholder="+91 98765 43210">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Account Role</label>
+                                <select name="role" class="form-select" id="roleSelector" onchange="toggleRoleFields()">
+                                    <option value="passenger" selected>Passenger (Default)</option>
+                                    <option value="staff">Airport Staff (Check-In / Baggage)</option>
+                                    <option value="admin">Airline Staff / Admin</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6" id="passportFieldContainer">
+                                <label class="form-label fw-semibold text-muted small">Passport / ID Number</label>
+                                <input type="text" name="passport_number" class="form-control" placeholder="e.g. Z9823412">
+                            </div>
+                        </div>
+
+                        <div class="row g-3 mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Password (min 6 chars) *</label>
+                                <input type="password" name="password" class="form-control" placeholder="••••••••" required minlength="6">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Confirm Password *</label>
+                                <input type="password" name="confirm_password" class="form-control" placeholder="••••••••" required minlength="6">
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-fms-accent w-100 py-2 fw-bold mb-3">
+                            <i class="bi bi-check-circle me-1"></i> Complete Registration
+                        </button>
+                    </form>
+
+                    <div class="text-center border-top pt-3 mt-3 small text-muted">
+                        Already have an account? <a href="{{ url_for('auth.login') }}" class="fw-bold text-primary">Sign In</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function toggleRoleFields() {
+    const role = document.getElementById('roleSelector').value;
+    const passportContainer = document.getElementById('passportFieldContainer');
+    if (role === 'passenger') {
+        passportContainer.style.display = 'block';
+    } else {
+        passportContainer.style.display = 'block';
+    }
+}
+</script>
+{% endblock %}

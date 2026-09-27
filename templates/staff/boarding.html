@@ -1,0 +1,177 @@
+{% extends 'base.html' %}
+
+{% block title %}Gate Boarding & Manifest - SkyWings Staff{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 no-print">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-door-open-fill me-2 text-primary"></i>Gate Boarding & Passenger Manifest Controller</h3>
+            <small class="text-muted">Real-time gate check-off, passenger manifest audit, and boarding progress tracking</small>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-printer me-1"></i> Print Manifest
+            </button>
+            <a href="{{ url_for('staff.desk') }}" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-arrow-left me-1"></i> Operations Desk
+            </a>
+        </div>
+    </div>
+
+    <!-- Flight Selector Bar -->
+    <div class="fms-card p-3 mb-4 no-print">
+        <form action="{{ url_for('staff.boarding') }}" method="GET" class="row g-3 align-items-center">
+            <div class="col-md-8">
+                <label class="form-label fw-bold text-dark small mb-1">Select Departing Flight for Gate Operations:</label>
+                <select name="flight_id" class="form-select form-select-lg" onchange="this.form.submit()">
+                    <option value="">-- Choose Active Flight --</option>
+                    {% for f in active_flights %}
+                        <option value="{{ f.id }}" {% if selected_flight and selected_flight.id == f.id %}selected{% endif %}>
+                            {{ f.flight_number }} | {{ f.source_code }} &rarr; {{ f.destination_code }} | Dep: {{ f.departure_time.strftime('%I:%M %p') }} | Gate {{ f.gate }} [{{ f.status }}]
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-4 text-md-end mt-md-4">
+                {% if selected_flight and selected_flight.status != 'Boarding' %}
+                    <form action="{{ url_for('staff.boarding', flight_id=selected_flight.id) }}" method="POST" class="d-inline">
+                        <input type="hidden" name="action" value="start_boarding">
+                        <button type="submit" class="btn btn-warning btn-lg fw-bold text-dark w-100">
+                            <i class="bi bi-megaphone-fill me-1"></i> Announce & Start Boarding
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </form>
+    </div>
+
+    {% if selected_flight %}
+        <!-- Live Boarding Progress Cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-3 col-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Total Booked</div>
+                        <div class="stat-value text-dark">{{ total_passengers }}</div>
+                    </div>
+                    <div class="stat-icon bg-light text-dark border">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Checked-In</div>
+                        <div class="stat-value text-info">{{ checked_in_count }}</div>
+                    </div>
+                    <div class="stat-icon bg-info-subtle text-info">
+                        <i class="bi bi-pass-fill"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Boarded at Gate</div>
+                        <div class="stat-value text-success">{{ boarded_count }}</div>
+                    </div>
+                    <div class="stat-icon bg-success-subtle text-success">
+                        <i class="bi bi-person-check-fill"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-3 col-6">
+                <div class="stat-card">
+                    <div>
+                        <div class="stat-label">Not Boarded (Pending)</div>
+                        <div class="stat-value text-danger">{{ not_boarded_count }}</div>
+                    </div>
+                    <div class="stat-icon bg-danger-subtle text-danger">
+                        <i class="bi bi-hourglass-split"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Passenger Manifest Table -->
+        <div class="fms-card">
+            <div class="fms-card-header">
+                <div>
+                    <h5 class="fw-bold mb-0 text-dark">
+                        <i class="bi bi-list-check me-2 text-primary"></i>Passenger Manifest: Flight {{ selected_flight.flight_number }}
+                    </h5>
+                    <small class="text-muted">{{ selected_flight.source }} &rarr; {{ selected_flight.destination }} | Gate {{ selected_flight.gate }} ({{ selected_flight.terminal }})</small>
+                </div>
+                <span class="badge {{ selected_flight.status_badge_class }} fs-6 px-3 py-2">{{ selected_flight.status }}</span>
+            </div>
+            <div class="fms-card-body p-0">
+                <div class="table-responsive">
+                    <table class="fms-table">
+                        <thead>
+                            <tr>
+                                <th>Seat</th>
+                                <th>Passenger Name</th>
+                                <th>PNR Reference</th>
+                                <th>Cabin Class</th>
+                                <th>Boarding Pass No</th>
+                                <th>Luggage Tags</th>
+                                <th>Passenger Status</th>
+                                <th class="text-end no-print">Gate Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for b in manifest %}
+                            <tr class="{% if b.status == 'Boarded' %}table-success bg-opacity-25{% endif %}">
+                                <td><span class="fw-bold fs-6 text-primary">{{ b.seat.seat_number }}</span></td>
+                                <td class="fw-bold text-dark">{{ b.passenger_name }}</td>
+                                <td><span class="font-monospace text-muted">{{ b.booking_reference }}</span></td>
+                                <td><span class="badge bg-light text-dark border">{{ b.seat.seat_class }}</span></td>
+                                <td class="font-monospace">{{ b.checkin_record.boarding_pass_no if b.checkin_record else 'Not Checked-In' }}</td>
+                                <td>
+                                    {% for bg in b.baggage_items %}
+                                        <span class="badge bg-secondary font-monospace">{{ bg.baggage_tag }}</span>
+                                    {% else %}
+                                        <small class="text-muted">Cabin only</small>
+                                    {% endfor %}
+                                </td>
+                                <td><span class="badge {{ b.status_badge }}">{{ b.status }}</span></td>
+                                <td class="text-end no-print">
+                                    {% if b.status == 'Checked-In' %}
+                                        <form action="{{ url_for('staff.boarding', flight_id=selected_flight.id) }}" method="POST" class="d-inline">
+                                            <input type="hidden" name="action" value="board_single">
+                                            <input type="hidden" name="booking_id" value="{{ b.id }}">
+                                            <button type="submit" class="btn btn-sm btn-success fw-bold px-3">
+                                                <i class="bi bi-check2-circle me-1"></i> Mark Boarded
+                                            </button>
+                                        </form>
+                                    {% elif b.status == 'Boarded' %}
+                                        <span class="text-success fw-bold small"><i class="bi bi-check-circle-fill me-1"></i> On Board</span>
+                                    {% else %}
+                                        <a href="{{ url_for('staff.checkin', q=b.booking_reference) }}" class="btn btn-sm btn-outline-warning text-dark py-1">
+                                            Needs Check-In
+                                        </a>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">No confirmed bookings on this flight.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="fms-card p-5 text-center">
+            <i class="bi bi-airplane text-muted fs-1 mb-2"></i>
+            <h5 class="fw-bold">Select a Flight to Open Gate Manifest</h5>
+            <p class="text-muted small">Choose an active departing flight from the dropdown selector above to monitor real-time boarding.</p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

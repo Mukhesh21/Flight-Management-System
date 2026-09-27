@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+
+{% block title %}{% if is_new %}Create New Flight Schedule{% else %}Edit Flight {{ flight.flight_number }}{% endif %} - SkyWings Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="fms-card shadow-sm border">
+                <div class="fms-card-header bg-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold">
+                            <i class="bi bi-airplane-engines me-2 text-primary"></i>
+                            {% if is_new %}Schedule New Flight{% else %}Edit Flight {{ flight.flight_number }}{% endif %}
+                        </h4>
+                        <small class="text-muted">Configure aircraft, route, departure/arrival schedules, and gate assignment</small>
+                    </div>
+                    <a href="{{ url_for('admin.flights_list') }}" class="btn btn-outline-secondary btn-sm">
+                        <i class="bi bi-arrow-left me-1"></i> Back to Flights
+                    </a>
+                </div>
+                <div class="fms-card-body p-4">
+                    <form action="" method="POST">
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Flight Identification & Airline</h5>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Flight Number (e.g. AI-202 or SW-405) *</label>
+                                <input type="text" name="flight_number" class="form-control font-monospace fw-bold" value="{{ flight.flight_number if flight else 'SW-501' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Airline Name *</label>
+                                <input type="text" name="airline_name" class="form-control" value="{{ flight.airline_name if flight else 'SkyWings Airlines' }}" required>
+                            </div>
+                        </div>
+
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-4">Route & Airport Codes</h5>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Origin City *</label>
+                                <input type="text" name="source" class="form-control" value="{{ flight.source if flight else 'Chennai' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Origin IATA Airport Code (e.g. MAA) *</label>
+                                <input type="text" name="source_code" class="form-control font-monospace text-uppercase" value="{{ flight.source_code if flight else 'MAA' }}" maxlength="5" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Destination City *</label>
+                                <input type="text" name="destination" class="form-control" value="{{ flight.destination if flight else 'Delhi' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Destination IATA Airport Code (e.g. DEL) *</label>
+                                <input type="text" name="destination_code" class="form-control font-monospace text-uppercase" value="{{ flight.destination_code if flight else 'DEL' }}" maxlength="5" required>
+                            </div>
+                        </div>
+
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-4">Schedule Timings & Gate Assignment</h5>
+                        <div class="row g-3 mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Departure Date & Time *</label>
+                                <input type="datetime-local" name="departure_time" class="form-control" value="{{ flight.departure_time.strftime('%Y-%m-%dT%H:%M') if flight else '' }}" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-semibold text-muted small">Arrival Date & Time *</label>
+                                <input type="datetime-local" name="arrival_time" class="form-control" value="{{ flight.arrival_time.strftime('%Y-%m-%dT%H:%M') if flight else '' }}" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-muted small">Assigned Departure Gate</label>
+                                <input type="text" name="gate" class="form-control" value="{{ flight.gate if flight else 'A12' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-muted small">Terminal</label>
+                                <input type="text" name="terminal" class="form-control" value="{{ flight.terminal if flight else 'T3' }}">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label fw-semibold text-muted small">Base Airfare (₹) *</label>
+                                <input type="number" step="100" name="base_price" class="form-control" value="{{ flight.base_price if flight else 4800 }}" required>
+                            </div>
+                        </div>
+
+                        {% if is_new %}
+                        <h5 class="fw-bold text-dark border-bottom pb-2 mb-3 mt-4">Aircraft Selection</h5>
+                        <div class="row g-3 mb-4">
+                            <div class="col-12">
+                                <label class="form-label fw-semibold text-muted small">Select Aircraft from Fleet (Auto-generates visual seat map) *</label>
+                                <select name="aircraft_id" class="form-select" required>
+                                    {% for ac in aircrafts %}
+                                        <option value="{{ ac.id }}">{{ ac.model }} (Reg: {{ ac.registration_no }}) — Capacity: {{ ac.total_seats }} seats (First: {{ ac.first_class_seats }}, Biz: {{ ac.business_seats }}, Econ: {{ ac.economy_seats }})</option>
+                                    {% endfor %}
+                                </select>
+                                <small class="text-muted"><i class="bi bi-magic me-1"></i> Saving will automatically initialize full cabin seat inventory for passenger booking.</small>
+                            </div>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-end gap-2 border-top pt-3 mt-4">
+                            <a href="{{ url_for('admin.flights_list') }}" class="btn btn-secondary">Cancel</a>
+                            <button type="submit" class="btn btn-fms-primary px-4 fw-bold">
+                                <i class="bi bi-check-circle me-1"></i> {% if is_new %}Publish Flight Schedule{% else %}Save Changes & Notify on Gate Revision{% endif %}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends 'base.html' %}
+
+{% block title %}Manage Flights - SkyWings Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-airplane me-2 text-primary"></i>Flight Fleet Scheduling & Management</h3>
+            <small class="text-muted">Create, modify, delay, or cancel flights and assign aircraft gates</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.new_flight') }}" class="btn btn-fms-accent btn-sm fw-bold px-3">
+                <i class="bi bi-plus-lg me-1"></i> Add New Flight Schedule
+            </a>
+        </div>
+    </div>
+
+    <!-- Search & Status Filter Bar -->
+    <div class="fms-card p-3 mb-4">
+        <form action="{{ url_for('admin.flights_list') }}" method="GET" class="row g-3 align-items-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <span class="input-group-text bg-light"><i class="bi bi-search"></i></span>
+                    <input type="text" name="q" class="form-control" placeholder="Search by Flight No, Origin, or Destination..." value="{{ search_query }}">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <select name="status" class="form-select" onchange="this.form.submit()">
+                    <option value="">All Flight Statuses</option>
+                    <option value="Scheduled" {% if status_filter == 'Scheduled' %}selected{% endif %}>Scheduled</option>
+                    <option value="Boarding" {% if status_filter == 'Boarding' %}selected{% endif %}>Boarding</option>
+                    <option value="Departed" {% if status_filter == 'Departed' %}selected{% endif %}>Departed</option>
+                    <option value="Delayed" {% if status_filter == 'Delayed' %}selected{% endif %}>Delayed</option>
+                    <option value="Cancelled" {% if status_filter == 'Cancelled' %}selected{% endif %}>Cancelled</option>
+                    <option value="Arrived" {% if status_filter == 'Arrived' %}selected{% endif %}>Arrived</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+            </div>
+            <div class="col-md-2 text-end">
+                <a href="{{ url_for('admin.flights_list') }}" class="btn btn-outline-secondary btn-sm w-100">Reset</a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Flights Table -->
+    <div class="fms-card">
+        <div class="fms-card-body p-0">
+            <div class="table-responsive">
+                <table class="fms-table">
+                    <thead>
+                        <tr>
+                            <th>Flight No</th>
+                            <th>Airline</th>
+                            <th>Route (Origin &rarr; Destination)</th>
+                            <th>Departure Time</th>
+                            <th>Arrival Time</th>
+                            <th>Aircraft</th>
+                            <th>Gate</th>
+                            <th>Seats Left</th>
+                            <th>Base Fare</th>
+                            <th>Status</th>
+                            <th>Quick Status</th>
+                            <th class="text-end">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in flights %}
+                        <tr>
+                            <td><span class="badge bg-primary fs-6 px-2 py-1 font-monospace">{{ f.flight_number }}</span></td>
+                            <td class="small">{{ f.airline_name }}</td>
+                            <td>
+                                <strong>{{ f.source_code }}</strong> &rarr; <strong>{{ f.destination_code }}</strong>
+                                <small class="text-muted d-block">{{ f.source }} to {{ f.destination }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ f.departure_time.strftime('%I:%M %p') }}</strong>
+                                <small class="text-muted d-block">{{ f.departure_time.strftime('%b %d, %Y') }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ f.arrival_time.strftime('%I:%M %p') }}</strong>
+                                <small class="text-muted d-block">{{ f.arrival_time.strftime('%b %d, %Y') }}</small>
+                            </td>
+                            <td><span class="badge bg-light text-dark border">{{ f.aircraft.model if f.aircraft else 'Airbus A320' }}</span></td>
+                            <td><strong>{{ f.gate }}</strong> ({{ f.terminal }})</td>
+                            <td>
+                                <span class="fw-bold {% if f.available_seats == 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ f.available_seats }} / {{ f.seats.count() }}
+                                </span>
+                            </td>
+                            <td class="fw-semibold">{{ f.base_price|format_currency }}</td>
+                            <td><span class="badge {{ f.status_badge_class }}">{{ f.status }}</span></td>
+                            <td>
+                                <!-- Quick Status Changer Form -->
+                                <form action="{{ url_for('admin.update_flight_status', flight_id=f.id) }}" method="POST" class="d-inline">
+                                    <select name="status" class="form-select form-select-sm" onchange="this.form.submit()" style="font-size: 0.75rem; width: 110px;">
+                                        <option value="Scheduled" {% if f.status == 'Scheduled' %}selected{% endif %}>Scheduled</option>
+                                        <option value="Boarding" {% if f.status == 'Boarding' %}selected{% endif %}>Boarding</option>
+                                        <option value="Departed" {% if f.status == 'Departed' %}selected{% endif %}>Departed</option>
+                                        <option value="Arrived" {% if f.status == 'Arrived' %}selected{% endif %}>Arrived</option>
+                                    </select>
+                                </form>
+                            </td>
+                            <td class="text-end">
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('admin.edit_flight', flight_id=f.id) }}" class="btn btn-outline-secondary" title="Edit Flight Details">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% if f.status != 'Cancelled' %}
+                                        <a href="{{ url_for('admin.manage_delay', flight_id=f.id) }}" class="btn btn-outline-warning text-dark" title="Manage Flight Delay & Notify">
+                                            <i class="bi bi-clock-history"></i>
+                                        </a>
+                                        <a href="{{ url_for('admin.cancel_flight', flight_id=f.id) }}" class="btn btn-outline-danger" title="Cancel Flight & Auto Refund">
+                                            <i class="bi bi-x-circle"></i>
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="12" class="text-center py-5 text-muted">
+                                No flights found matching your search query.
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

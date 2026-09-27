@@ -1,0 +1,264 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Flight Management System - Book, Schedule & Track Flights{% endblock %}
+
+{% block content %}
+<!-- Hero Section with Flight Search -->
+<section class="hero-section">
+    <div class="container">
+        <div class="row align-items-center mb-4">
+            <div class="col-lg-8">
+                <span class="badge bg-info text-dark px-3 py-2 rounded-pill fw-bold text-uppercase mb-3">
+                    <i class="bi bi-stars me-1"></i> Next-Gen Airline Operations & Passenger Platform
+                </span>
+                <h1 class="display-4 fw-extrabold mb-3">
+                    Smart Flight Management <br><span class="text-info">Reimagined for Excellence</span>
+                </h1>
+                <p class="lead text-white-50 mb-4" style="max-width: 650px;">
+                    Experience seamless real-time flight booking, intelligent aircraft seat selection, baggage lifecycle tracking, instant delay alerts, and airport check-in operations.
+                </p>
+            </div>
+            <div class="col-lg-4 d-none d-lg-block text-end">
+                <div class="p-3 bg-white bg-opacity-10 rounded-4 border border-white-50 backdrop-blur text-start">
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        <div class="bg-success text-white p-2 rounded-3">
+                            <i class="bi bi-radar fs-4"></i>
+                        </div>
+                        <div>
+                            <div class="text-white fw-bold">Live Flight Operations</div>
+                            <small class="text-white-50">Real-time gate & delay monitoring</small>
+                        </div>
+                    </div>
+                    <div class="text-white-50 small mt-2">
+                        <i class="bi bi-check-circle-fill text-info me-1"></i> Active Fleet: Airbus A320 & Boeing 787
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Interactive Flight Search Box Container -->
+<div class="container">
+    <div class="hero-search-card">
+        <form action="{{ url_for('passenger.search') }}" method="GET">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">
+                        <i class="bi bi-geo-alt-fill text-primary me-1"></i> From (Departure)
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-airplane-engines"></i></span>
+                        <input type="text" name="source" class="form-control border-start-0" placeholder="e.g. Chennai (MAA)" value="Chennai">
+                    </div>
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">
+                        <i class="bi bi-pin-map-fill text-danger me-1"></i> To (Destination)
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-light border-end-0"><i class="bi bi-geo-fill"></i></span>
+                        <input type="text" name="destination" class="form-control border-start-0" placeholder="e.g. Delhi (DEL)" value="Delhi">
+                    </div>
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">
+                        <i class="bi bi-calendar3 text-info me-1"></i> Travel Date
+                    </label>
+                    <input type="date" name="date" class="form-control" value="{{ now.strftime('%Y-%m-%d') }}">
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-bold text-muted small text-uppercase mb-1">
+                        <i class="bi bi-people-fill text-secondary me-1"></i> Passengers
+                    </label>
+                    <select name="passengers" class="form-select">
+                        <option value="1" selected>1 Passenger</option>
+                        <option value="2">2 Passengers</option>
+                        <option value="3">3 Passengers</option>
+                        <option value="4">4+ Passengers</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-12">
+                    <button type="submit" class="btn btn-fms-accent w-100 py-2 fw-bold d-flex align-items-center justify-content-center gap-2">
+                        <i class="bi bi-search"></i> Search Flights
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Featured Live Flights Section -->
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-end mb-4">
+            <div>
+                <span class="badge bg-primary-subtle text-primary fw-bold text-uppercase px-2 py-1 mb-1">Live Scheduling</span>
+                <h3 class="fw-bold mb-0">Featured & Active Flights</h3>
+            </div>
+            <a href="{{ url_for('flights.schedule') }}" class="btn btn-outline-primary btn-sm fw-semibold">
+                View All Live Flights <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+
+        <div class="row g-4">
+            {% for flight in featured_flights %}
+            <div class="col-lg-4 col-md-6">
+                <div class="fms-card h-100 p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <span class="badge bg-light text-primary fw-bold border px-2 py-1">
+                                <i class="bi bi-airplane me-1"></i> {{ flight.flight_number }}
+                            </span>
+                            <span class="badge {{ flight.status_badge_class }} px-2 py-1">
+                                {{ flight.status }}
+                            </span>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center my-3">
+                            <div>
+                                <div class="flight-time">{{ flight.departure_time.strftime('%I:%M %p') }}</div>
+                                <div class="flight-airport-code">{{ flight.source_code }}</div>
+                                <small class="text-muted">{{ flight.source }}</small>
+                            </div>
+                            <div class="flight-duration-line px-2" style="width: 110px;">
+                                <span class="duration-text">{{ flight.duration }}</span>
+                                <div class="line"><i class="bi bi-arrow-right"></i></div>
+                            </div>
+                            <div class="text-end">
+                                <div class="flight-time">{{ flight.arrival_time.strftime('%I:%M %p') }}</div>
+                                <div class="flight-airport-code">{{ flight.destination_code }}</div>
+                                <small class="text-muted">{{ flight.destination }}</small>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center border-top pt-2 mt-3 text-muted small">
+                            <span><i class="bi bi-door-open me-1"></i> Gate <strong>{{ flight.gate }}</strong></span>
+                            <span><i class="bi bi-person-check me-1"></i> Seats: <strong>{{ flight.available_seats }}</strong> left</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-between align-items-center pt-3 mt-3 border-top">
+                        <div>
+                            <small class="text-muted d-block">Starting from</small>
+                            <span class="fs-5 fw-bold text-dark">{{ flight.base_price|format_currency }}</span>
+                        </div>
+                        <a href="{{ url_for('passenger.seat_select', flight_id=flight.id) }}" class="btn btn-fms-primary btn-sm px-3">
+                            Select Seat <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Core Problem Solving Modules Showcase -->
+<section class="py-5 bg-white border-top border-bottom">
+    <div class="container">
+        <div class="text-center max-w-700 mx-auto mb-5">
+            <span class="badge bg-info-subtle text-info fw-bold text-uppercase px-3 py-1 mb-2">Integrated Platform</span>
+            <h2 class="fw-bold">Solving Real-World Airline & Airport Challenges</h2>
+            <p class="text-muted">A complete Python-based enterprise ecosystem eliminating overbooking, manual seat assignments, delayed communication, and fragmented baggage tracking.</p>
+        </div>
+
+        <div class="row g-4">
+            <div class="col-lg-3 col-md-6">
+                <div class="p-4 rounded-4 border bg-light h-100">
+                    <div class="stat-icon bg-primary text-white mb-3">
+                        <i class="bi bi-grid-3x3-gap-fill fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold">Smart Seat Allocation</h5>
+                    <p class="text-muted small mb-0">
+                        Interactive aircraft fuselage visual seat selector with real-time occupancy locking, class distinctions, and automatic seat release on cancellation.
+                    </p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="p-4 rounded-4 border bg-light h-100">
+                    <div class="stat-icon bg-danger text-white mb-3">
+                        <i class="bi bi-clock-history fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold">Flight Delay Alerts</h5>
+                    <p class="text-muted small mb-0">
+                        When flight timings change, the system automatically detects all affected passengers and broadcasts immediate revised schedule notifications.
+                    </p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="p-4 rounded-4 border bg-light h-100">
+                    <div class="stat-icon bg-info text-white mb-3">
+                        <i class="bi bi-luggage-fill fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold">Baggage Lifecycle</h5>
+                    <p class="text-muted small mb-0">
+                        End-to-end tracking pipeline: Checked-In ➔ Security Checked ➔ Loaded ➔ In Transit ➔ Delivered with live location timestamps and passenger lookup.
+                    </p>
+                </div>
+            </div>
+            <div class="col-lg-3 col-md-6">
+                <div class="p-4 rounded-4 border bg-light h-100">
+                    <div class="stat-icon bg-success text-white mb-3">
+                        <i class="bi bi-person-check-fill fs-4"></i>
+                    </div>
+                    <h5 class="fw-bold">Check-In & Manifest</h5>
+                    <p class="text-muted small mb-0">
+                        Dedicated airport staff terminal for instant passenger verification, boarding pass issuance, and live gate manifest check-offs.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Popular Routes Grid -->
+<section class="py-5">
+    <div class="container">
+        <h3 class="fw-bold mb-4">Popular Flight Routes</h3>
+        <div class="row g-3">
+            {% for r in popular_routes %}
+            <div class="col-lg-4 col-md-6">
+                <a href="{{ url_for('passenger.search', source=r.from.split('(')[0].strip(), destination=r.to.split('(')[0].strip()) }}" class="text-decoration-none">
+                    <div class="fms-card p-3 d-flex align-items-center justify-content-between">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="bg-light p-2 rounded-circle text-primary">
+                                <i class="bi bi-airplane fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ r.from }} <i class="bi bi-arrow-right text-muted mx-1"></i> {{ r.to }}</div>
+                                <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ r.duration }} • Non-Stop</small>
+                            </div>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge bg-primary-subtle text-primary fw-bold">{{ r.price }}</span>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Quick Demo Login Helper Card for Evaluation -->
+<section class="py-4 bg-light border-top">
+    <div class="container">
+        <div class="p-4 bg-white rounded-4 border shadow-sm">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h5 class="fw-bold mb-1"><i class="bi bi-award-fill text-warning me-2"></i>Mini Project Academic Demonstration</h5>
+                    <p class="text-muted small mb-0">
+                        Explore all 3 user roles instantly. Login as <strong>Admin</strong> for scheduling and delays, <strong>Airport Staff</strong> for check-in and boarding, or <strong>Passenger</strong> to book tickets and track luggage.
+                    </p>
+                </div>
+                <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <a href="{{ url_for('auth.login') }}" class="btn btn-fms-primary fw-semibold px-4">
+                        Sign In Now <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block title %}Cancel Flight - {{ flight.flight_number }} | SkyWings Admin{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="fms-card shadow border-danger">
+                <div class="fms-card-header bg-danger text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold"><i class="bi bi-x-octagon-fill me-2"></i>Flight Cancellation Directive</h4>
+                        <small class="text-white-50">Cancel scheduled flight, trigger passenger refund queue, and broadcast emergency alerts</small>
+                    </div>
+                    <span class="badge bg-white text-danger fs-6 px-3 py-2 font-monospace">{{ flight.flight_number }}</span>
+                </div>
+                <div class="fms-card-body p-4">
+                    <!-- Impact Notice -->
+                    {% set affected_bookings = flight.bookings.filter(Booking.status.in_(['Confirmed', 'Checked-In'])).all() %}
+                    <div class="alert alert-danger d-flex align-items-start gap-3 mb-4">
+                        <i class="bi bi-exclamation-triangle-fill fs-2 mt-1"></i>
+                        <div>
+                            <h6 class="fw-bold mb-1">Critical Cancellation Notice</h6>
+                            <p class="small mb-0">
+                                Cancelling Flight <strong>{{ flight.flight_number }}</strong> will immediately mark the flight status as <code>Cancelled</code>, disable any further seat bookings, flag all <strong>{{ affected_bookings|length }} confirmed passenger bookings</strong>, and issue automatic in-app alerts and refund authorizations.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form action="" method="POST">
+                        <div class="mb-4">
+                            <label class="form-label fw-bold text-dark">Official Cancellation Reason *</label>
+                            <select name="cancellation_reason" class="form-select mb-3">
+                                <option value="Extreme Weather Conditions / Cyclone Alert" selected>Extreme Weather Conditions / Cyclone Alert</option>
+                                <option value="Airspace Closure by Aviation Regulatory Authorities">Airspace Closure by Aviation Regulatory Authorities</option>
+                                <option value="Unforeseen Aircraft Technical Grounding (AOG)">Unforeseen Aircraft Technical Grounding (AOG)</option>
+                                <option value="Airport Infrastructure / Runway Maintenance Outage">Airport Infrastructure / Runway Maintenance Outage</option>
+                            </select>
+                        </div>
+
+                        <!-- Affected Passengers Table Preview -->
+                        {% if affected_bookings %}
+                        <h6 class="fw-bold mb-2 text-dark">Affected Passengers Manifest ({{ affected_bookings|length }})</h6>
+                        <div class="table-responsive mb-4 border rounded" style="max-height: 200px; overflow-y: auto;">
+                            <table class="fms-table small mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>PNR</th>
+                                        <th>Passenger</th>
+                                        <th>Seat</th>
+                                        <th>Fare</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for b in affected_bookings %}
+                                    <tr>
+                                        <td class="font-monospace fw-bold text-primary">{{ b.booking_reference }}</td>
+                                        <td>{{ b.passenger_name }}</td>
+                                        <td>{{ b.seat.seat_number }}</td>
+                                        <td>{{ b.total_fare|format_currency }}</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% endif %}
+
+                        <div class="d-flex justify-content-between align-items-center border-top pt-3">
+                            <a href="{{ url_for('admin.flights_list') }}" class="btn btn-secondary">Discard & Return</a>
+                            <button type="submit" class="btn btn-danger btn-lg fw-bold px-4 shadow">
+                                <i class="bi bi-x-octagon me-1"></i> Confirm Flight Cancellation
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Baggage Live Tracker - SkyWings{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header & Search Box -->
+            <div class="fms-card p-4 mb-4 bg-primary text-white border-0 shadow-sm">
+                <div class="row align-items-center">
+                    <div class="col-md-7">
+                        <span class="badge bg-info text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">Live Logistics Radar</span>
+                        <h3 class="fw-bold mb-1 text-white"><i class="bi bi-luggage-fill me-2"></i>Smart Baggage Tracker</h3>
+                        <p class="text-white-50 small mb-0">Track the real-time lifecycle of your check-in luggage across airport checkpoints and aircraft cargo holds.</p>
+                    </div>
+                    <div class="col-md-5 mt-3 mt-md-0">
+                        <form action="{{ url_for('passenger.track_baggage') }}" method="GET">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white"><i class="bi bi-qr-code-scan text-primary"></i></span>
+                                <input type="text" name="tag" class="form-control" placeholder="Enter Baggage Tag (e.g. BG-8921)" value="{{ baggage_tag }}">
+                                <button type="submit" class="btn btn-warning fw-bold text-dark">Track Tag</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Single Baggage Searched Result -->
+            {% if searched_baggage %}
+            <div class="fms-card p-4 mb-4 shadow">
+                <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4 gap-2">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-bold">Tracked Tag ID</span>
+                        <h4 class="mb-0 fw-bold text-primary font-monospace">{{ searched_baggage.baggage_tag }}</h4>
+                    </div>
+                    <div>
+                        <span class="badge {{ searched_baggage.status_badge_class }} fs-6 px-3 py-2 text-uppercase">{{ searched_baggage.status }}</span>
+                    </div>
+                </div>
+
+                <!-- Step-by-Step Baggage Visual Pipeline -->
+                <div class="baggage-timeline">
+                    {% set steps = [
+                        ('Checked-In', 'Counter Checked', 'bi-person-check'),
+                        ('Security Checked', 'X-Ray Cleared', 'bi-shield-check'),
+                        ('Loaded', 'Tarmac Loaded', 'bi-box-seam'),
+                        ('In Transit', 'Airborne Cargo', 'bi-airplane-engines'),
+                        ('Arrived', 'Unloaded', 'bi-building-down'),
+                        ('Delivered', 'Carousel Claimed', 'bi-check-circle')
+                    ] %}
+
+                    {% for step_name, step_desc, step_icon in steps %}
+                        {% set is_active = (searched_baggage.status == step_name) %}
+                        {% set is_completed = (searched_baggage.status_step_index >= loop.index) %}
+                        <div class="timeline-step {% if is_active %}active{% elif is_completed %}completed{% endif %}">
+                            <div class="step-icon">
+                                <i class="bi {{ step_icon }}"></i>
+                            </div>
+                            <div class="step-title">{{ step_name }}</div>
+                            <small class="step-desc">{{ step_desc }}</small>
+                        </div>
+                    {% endfor %}
+                </div>
+
+                <!-- Baggage Details & Audit History -->
+                <div class="row g-4 mt-2">
+                    <div class="col-md-4">
+                        <div class="p-3 bg-light rounded-3 border">
+                            <h6 class="fw-bold mb-2 text-dark">Luggage Specifications</h6>
+                            <div class="small text-muted mb-1">Weight: <strong class="text-dark">{{ searched_baggage.weight_kg }} kg</strong></div>
+                            <div class="small text-muted mb-1">Type: <strong class="text-dark">{{ searched_baggage.baggage_type }}</strong></div>
+                            <div class="small text-muted mb-1">Booking Ref: <strong class="text-primary font-monospace">{{ searched_baggage.booking.booking_reference if searched_baggage.booking else 'N/A' }}</strong></div>
+                            <div class="small text-muted">Flight: <strong class="text-dark">{{ searched_baggage.booking.flight.flight_number if searched_baggage.booking else 'N/A' }}</strong></div>
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-clock-history me-1 text-primary"></i>Timestamped Movement Logs</h6>
+                        <div class="table-responsive">
+                            <table class="fms-table small">
+                                <thead>
+                                    <tr>
+                                        <th>Status</th>
+                                        <th>Location Checkpoint</th>
+                                        <th>Notes</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for log in searched_baggage.logs %}
+                                    <tr>
+                                        <td><span class="badge bg-light text-dark border">{{ log.status }}</span></td>
+                                        <td>{{ log.location }}</td>
+                                        <td class="text-muted">{{ log.notes or '-' }}</td>
+                                        <td>{{ log.timestamp.strftime('%b %d, %I:%M %p') }}</td>
+                                    </tr>
+                                    {% else %}
+                                    <tr>
+                                        <td colspan="4" class="text-center text-muted py-3">No checkpoint scans logged yet.</td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <!-- Passenger's Registered Baggage List -->
+            <div class="fms-card p-4">
+                <h5 class="fw-bold mb-3 text-dark border-bottom pb-2"><i class="bi bi-person-lines-fill me-2 text-primary"></i>My Registered Baggage Tags</h5>
+                {% if user_baggage_list %}
+                    <div class="table-responsive">
+                        <table class="fms-table">
+                            <thead>
+                                <tr>
+                                    <th>Tag ID</th>
+                                    <th>Flight No</th>
+                                    <th>Route</th>
+                                    <th>Weight</th>
+                                    <th>Current Status</th>
+                                    <th>Last Updated</th>
+                                    <th>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for bg in user_baggage_list %}
+                                <tr>
+                                    <td><span class="fw-bold text-primary font-monospace">{{ bg.baggage_tag }}</span></td>
+                                    <td>{{ bg.booking.flight.flight_number if bg.booking else 'N/A' }}</td>
+                                    <td>{{ bg.booking.flight.source_code }} &rarr; {{ bg.booking.flight.destination_code if bg.booking else '' }}</td>
+                                    <td>{{ bg.weight_kg }} kg</td>
+                                    <td><span class="badge {{ bg.status_badge_class }}">{{ bg.status }}</span></td>
+                                    <td class="small text-muted">{{ bg.last_updated.strftime('%b %d, %I:%M %p') }}</td>
+                                    <td>
+                                        <a href="{{ url_for('passenger.track_baggage', tag=bg.baggage_tag) }}" class="btn btn-sm btn-fms-primary py-1 px-3">
+                                            Track Live <i class="bi bi-geo-alt ms-1"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p class="text-muted small text-center py-4 mb-0">You do not have any registered baggage items in your account.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

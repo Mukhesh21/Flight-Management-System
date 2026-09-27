@@ -1,0 +1,137 @@
+{% extends 'base.html' %}
+
+{% block title %}Baggage Operations Terminal - SkyWings Staff{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-qr-code-scan me-2 text-info"></i>Baggage Checkpoint Operations Desk</h3>
+                    <small class="text-muted">Scan luggage tags and advance tracking status from Check-In to Final Carousel Delivery</small>
+                </div>
+                <a href="{{ url_for('staff.desk') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Operations Desk
+                </a>
+            </div>
+
+            <!-- Tag Scanner Input Card -->
+            <div class="fms-card p-4 mb-4 shadow-sm">
+                <form action="{{ url_for('staff.baggage_desk') }}" method="GET">
+                    <label class="form-label fw-bold text-dark">Scan or Enter Baggage Tag ID:</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-upc-scan text-primary"></i></span>
+                        <input type="text" name="tag" class="form-control form-control-lg font-monospace text-uppercase" placeholder="e.g. BG-8921" value="{{ tag_query }}" autofocus required>
+                        <button type="submit" class="btn btn-info btn-lg px-4 fw-bold text-dark">Load Tag</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Single Baggage Edit & Advance Status Form -->
+            {% if baggage %}
+            <div class="fms-card p-4 mb-4 shadow border-info">
+                <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-4 gap-2">
+                    <div>
+                        <span class="text-muted small text-uppercase fw-bold">Active Baggage Record</span>
+                        <h4 class="mb-0 fw-bold text-primary font-monospace">{{ baggage.baggage_tag }}</h4>
+                    </div>
+                    <span class="badge {{ baggage.status_badge_class }} fs-6 px-3 py-2 text-uppercase">{{ baggage.status }}</span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3 col-6">
+                        <small class="text-muted text-uppercase fw-bold d-block">Passenger Name</small>
+                        <span class="fw-bold text-dark">{{ baggage.passenger.full_name if baggage.passenger else 'N/A' }}</span>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <small class="text-muted text-uppercase fw-bold d-block">Flight Number</small>
+                        <span class="fw-bold text-dark">{{ baggage.booking.flight.flight_number if baggage.booking else 'N/A' }}</span>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <small class="text-muted text-uppercase fw-bold d-block">Weight & Type</small>
+                        <span class="fw-bold text-dark">{{ baggage.weight_kg }} kg ({{ baggage.baggage_type }})</span>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <small class="text-muted text-uppercase fw-bold d-block">Flight Route</small>
+                        <span class="fw-bold text-dark">{{ baggage.booking.flight.source_code }} &rarr; {{ baggage.booking.flight.destination_code if baggage.booking else 'N/A' }}</span>
+                    </div>
+                </div>
+
+                <!-- Status Advance Form -->
+                <form action="{{ url_for('staff.baggage_desk') }}" method="POST">
+                    <input type="hidden" name="baggage_id" value="{{ baggage.id }}">
+                    
+                    <h5 class="fw-bold text-dark border-bottom pb-2 mb-3">Update Checkpoint Status</h5>
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small">Advance Status to: *</label>
+                            <select name="status" class="form-select form-select-lg fw-bold text-primary" required>
+                                <option value="Checked-In" {% if baggage.status == 'Checked-In' %}selected{% endif %}>1. Checked-In (Counter Accepted)</option>
+                                <option value="Security Checked" {% if baggage.status == 'Security Checked' %}selected{% endif %}>2. Security Checked (X-Ray Cleared)</option>
+                                <option value="Loaded" {% if baggage.status == 'Loaded' %}selected{% endif %}>3. Loaded (Tarmac / Loading Bay)</option>
+                                <option value="In Transit" {% if baggage.status == 'In Transit' %}selected{% endif %}>4. In Transit (Aircraft Cargo Hold)</option>
+                                <option value="Arrived" {% if baggage.status == 'Arrived' %}selected{% endif %}>5. Arrived (Destination Unloaded)</option>
+                                <option value="Delivered" {% if baggage.status == 'Delivered' %}selected{% endif %}>6. Delivered (Carousel Ready / Claimed)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-dark small">Checkpoint Location Description</label>
+                            <input type="text" name="location" class="form-control form-control-lg" placeholder="e.g. T3 Conveyor Belt 4 or Cargo Hold A">
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label fw-bold text-dark small">Operational Notes / Remarks</label>
+                            <input type="text" name="notes" class="form-control" placeholder="e.g. Scanned at security scanner Gate B4">
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2">
+                        <button type="submit" class="btn btn-info btn-lg fw-bold text-dark px-4 shadow">
+                            <i class="bi bi-arrow-repeat me-1"></i> Update Baggage Status & Notify Passenger
+                        </button>
+                    </div>
+                </form>
+            </div>
+            {% endif %}
+
+            <!-- Recent Baggage Activity -->
+            <div class="fms-card p-4">
+                <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">Recent Active Baggage Records in Handling</h5>
+                <div class="table-responsive">
+                    <table class="fms-table small">
+                        <thead>
+                            <tr>
+                                <th>Tag ID</th>
+                                <th>Flight No</th>
+                                <th>Passenger</th>
+                                <th>Weight</th>
+                                <th>Status</th>
+                                <th>Last Updated</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for bg in recent_baggage %}
+                            <tr>
+                                <td><span class="fw-bold text-primary font-monospace">{{ bg.baggage_tag }}</span></td>
+                                <td>{{ bg.booking.flight.flight_number if bg.booking else 'N/A' }}</td>
+                                <td>{{ bg.passenger.full_name if bg.passenger else 'N/A' }}</td>
+                                <td>{{ bg.weight_kg }} kg</td>
+                                <td><span class="badge {{ bg.status_badge_class }}">{{ bg.status }}</span></td>
+                                <td>{{ bg.last_updated.strftime('%b %d, %I:%M %p') }}</td>
+                                <td>
+                                    <a href="{{ url_for('staff.baggage_desk', tag=bg.baggage_tag) }}" class="btn btn-sm btn-outline-secondary">
+                                        Scan / Update
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

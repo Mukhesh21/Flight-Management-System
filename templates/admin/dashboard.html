@@ -1,0 +1,232 @@
+{% extends 'base.html' %}
+
+{% block title %}Admin Control Center - SkyWings FMS{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 py-4">
+    <!-- Admin Top Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <span class="badge bg-warning text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-1">Airline Operations Command</span>
+            <h2 class="fw-bold mb-0 text-dark"><i class="bi bi-speedometer2 me-2 text-primary"></i>Executive Flight Operations Dashboard</h2>
+            <small class="text-muted">Real-time airline monitoring, fleet health, delay dispatch, and passenger load</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('admin.new_flight') }}" class="btn btn-fms-accent btn-sm px-3 fw-bold">
+                <i class="bi bi-plus-circle me-1"></i> Schedule Flight
+            </a>
+            <a href="{{ url_for('admin.reports') }}" class="btn btn-outline-secondary btn-sm px-3 fw-semibold">
+                <i class="bi bi-file-earmark-bar-graph me-1"></i> Reports
+            </a>
+        </div>
+    </div>
+
+    <!-- KPI Metric Cards Grid -->
+    <div class="row g-3 mb-4">
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Flights</div>
+                    <div class="stat-value text-primary">{{ total_flights }}</div>
+                </div>
+                <div class="stat-icon bg-primary-subtle text-primary">
+                    <i class="bi bi-airplane-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Scheduled</div>
+                    <div class="stat-value text-info">{{ scheduled_flights }}</div>
+                </div>
+                <div class="stat-icon bg-info-subtle text-info">
+                    <i class="bi bi-calendar-check-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Delayed</div>
+                    <div class="stat-value text-danger">{{ delayed_flights }}</div>
+                </div>
+                <div class="stat-icon bg-danger-subtle text-danger">
+                    <i class="bi bi-clock-history"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Cancelled</div>
+                    <div class="stat-value text-secondary">{{ cancelled_flights }}</div>
+                </div>
+                <div class="stat-icon bg-secondary-subtle text-secondary">
+                    <i class="bi bi-x-octagon-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Passengers</div>
+                    <div class="stat-value text-success">{{ total_passengers }}</div>
+                </div>
+                <div class="stat-icon bg-success-subtle text-success">
+                    <i class="bi bi-people-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-xl-2 col-md-4 col-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Available Seats</div>
+                    <div class="stat-value text-dark">{{ total_seats_sum }}</div>
+                </div>
+                <div class="stat-icon bg-warning-subtle text-warning">
+                    <i class="bi bi-grid-3x3-gap-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Secondary Operational Metrics Row -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center shadow-sm">
+                <div>
+                    <small class="text-muted text-uppercase fw-bold">Confirmed Bookings</small>
+                    <div class="fs-4 fw-bold text-success">{{ confirmed_bookings }} <span class="fs-6 text-muted fw-normal">({{ checked_in_passengers }} Checked In)</span></div>
+                </div>
+                <span class="badge bg-success-subtle text-success p-2 fs-5"><i class="bi bi-ticket-detailed"></i></span>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center shadow-sm">
+                <div>
+                    <small class="text-muted text-uppercase fw-bold">Baggage In Logistics Transit</small>
+                    <div class="fs-4 fw-bold text-info">{{ baggage_in_transit }} <span class="fs-6 text-muted fw-normal">/ {{ baggage_total }} Total Bags</span></div>
+                </div>
+                <span class="badge bg-info-subtle text-info p-2 fs-5"><i class="bi bi-luggage-fill"></i></span>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-12">
+            <div class="p-3 bg-white border rounded-3 d-flex justify-content-between align-items-center shadow-sm">
+                <div>
+                    <small class="text-muted text-uppercase fw-bold">Ticket Revenue Realized</small>
+                    <div class="fs-4 fw-bold text-primary">{{ total_revenue|format_currency }}</div>
+                </div>
+                <span class="badge bg-primary-subtle text-primary p-2 fs-5"><i class="bi bi-currency-rupee"></i></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Visual Charts Analytics Row -->
+    <div class="row g-4 mb-4">
+        <div class="col-lg-6">
+            <div class="fms-card h-100">
+                <div class="fms-card-header">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Flight Status Distribution</h5>
+                    <span class="badge bg-light text-muted border">Live Fleet Radar</span>
+                </div>
+                <div class="fms-card-body p-4" style="height: 300px;">
+                    <canvas id="flightStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-6">
+            <div class="fms-card h-100">
+                <div class="fms-card-header">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-bar-chart-fill text-info me-2"></i>Baggage Handling Pipeline</h5>
+                    <span class="badge bg-light text-muted border">End-to-End Tracking</span>
+                </div>
+                <div class="fms-card-body p-4" style="height: 300px;">
+                    <canvas id="baggageStatusChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Flights & Live Actions Table -->
+    <div class="fms-card mb-4">
+        <div class="fms-card-header">
+            <h5 class="fw-bold mb-0"><i class="bi bi-airplane-engines me-2 text-primary"></i>Recent Scheduled Flight Operations</h5>
+            <a href="{{ url_for('admin.flights_list') }}" class="btn btn-outline-primary btn-sm">
+                View All Flights & Controls <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+        <div class="fms-card-body p-0">
+            <div class="table-responsive">
+                <table class="fms-table">
+                    <thead>
+                        <tr>
+                            <th>Flight No</th>
+                            <th>Route</th>
+                            <th>Departure Time</th>
+                            <th>Aircraft</th>
+                            <th>Gate</th>
+                            <th>Available Seats</th>
+                            <th>Status</th>
+                            <th>Operational Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in recent_flights %}
+                        <tr>
+                            <td><span class="badge bg-primary fs-6 px-2 py-1 font-monospace">{{ f.flight_number }}</span></td>
+                            <td>
+                                <strong>{{ f.source_code }}</strong> &rarr; <strong>{{ f.destination_code }}</strong>
+                                <small class="text-muted d-block">{{ f.source }} to {{ f.destination }}</small>
+                            </td>
+                            <td>
+                                <strong>{{ f.departure_time.strftime('%I:%M %p') }}</strong>
+                                <small class="text-muted d-block">{{ f.departure_time.strftime('%b %d, %Y') }}</small>
+                            </td>
+                            <td>{{ f.aircraft.model if f.aircraft else 'Airbus A320' }}</td>
+                            <td><span class="badge bg-light text-dark border">{{ f.gate }} ({{ f.terminal }})</span></td>
+                            <td>
+                                <span class="fw-bold {% if f.available_seats == 0 %}text-danger{% else %}text-success{% endif %}">
+                                    {{ f.available_seats }} seats
+                                </span>
+                            </td>
+                            <td><span class="badge {{ f.status_badge_class }}">{{ f.status }}</span></td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{{ url_for('admin.edit_flight', flight_id=f.id) }}" class="btn btn-outline-secondary" title="Edit Flight">
+                                        <i class="bi bi-pencil"></i>
+                                    </a>
+                                    {% if f.status != 'Delayed' and f.status != 'Cancelled' %}
+                                    <a href="{{ url_for('admin.manage_delay', flight_id=f.id) }}" class="btn btn-outline-warning text-dark" title="Manage Delay">
+                                        <i class="bi bi-clock-history"></i>
+                                    </a>
+                                    {% endif %}
+                                    {% if f.status != 'Cancelled' %}
+                                    <a href="{{ url_for('admin.cancel_flight', flight_id=f.id) }}" class="btn btn-outline-danger" title="Cancel Flight">
+                                        <i class="bi bi-x-circle"></i>
+                                    </a>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Chart.js -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+<script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const flightData = {{ flight_status_data|tojson }};
+    const baggageData = {{ baggage_status_data|tojson }};
+    initAdminCharts(flightData, baggageData);
+});
+</script>
+{% endblock %}

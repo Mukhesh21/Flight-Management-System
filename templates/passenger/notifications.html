@@ -1,0 +1,79 @@
+{% extends 'base.html' %}
+
+{% block title %}Flight Alerts & Notifications - SkyWings{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-bell-fill text-warning me-2"></i>Flight Alerts & In-App Notifications</h3>
+                    <small class="text-muted">Real-time alerts for booking confirmations, delays, gate revisions, and baggage milestones</small>
+                </div>
+                <div class="d-flex gap-2">
+                    <form action="{{ url_for('passenger.mark_all_notifications_read') }}" method="POST">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">
+                            <i class="bi bi-check2-all me-1"></i> Mark All as Read
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Filter tabs -->
+            <ul class="nav nav-pills mb-4 gap-2">
+                <li class="nav-item">
+                    <a class="nav-link {% if filter_type == 'all' %}active bg-primary{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('passenger.notifications', filter='all') }}">
+                        All Notifications ({{ notifications|length }})
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if filter_type == 'unread' %}active bg-danger{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('passenger.notifications', filter='unread') }}">
+                        Unread Only
+                    </a>
+                </li>
+            </ul>
+
+            <!-- Notifications List -->
+            {% if notifications %}
+                <div class="d-flex flex-column gap-2">
+                    {% for n in notifications %}
+                    <div class="notif-item {% if not n.is_read %}unread{% endif %} p-3 rounded-3 shadow-sm border" id="notif-item-{{ n.id }}">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <i class="bi {{ n.icon_class }} fs-4"></i>
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">{{ n.title }}</h6>
+                                    <small class="text-muted"><i class="bi bi-clock me-1"></i>{{ n.created_at.strftime('%b %d, %Y at %I:%M %p') }}</small>
+                                </div>
+                            </div>
+                            <div class="d-flex align-items-center gap-2">
+                                {% if not n.is_read %}
+                                    <button class="btn btn-sm btn-outline-primary mark-notif-read-btn" data-id="{{ n.id }}" title="Mark Read">
+                                        <i class="bi bi-check2"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <p class="text-secondary small mb-2 ps-4 ms-2">{{ n.message }}</p>
+                        {% if n.link_url %}
+                            <div class="ps-4 ms-2">
+                                <a href="{{ n.link_url }}" class="btn btn-sm btn-light border text-primary fw-semibold py-1 px-3">
+                                    View Related Details &rarr;
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="fms-card p-5 text-center">
+                    <i class="bi bi-bell-slash text-muted fs-1 mb-2"></i>
+                    <h5 class="fw-bold">No Notifications</h5>
+                    <p class="text-muted small mb-0">You have no unread notifications or flight alerts right now.</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

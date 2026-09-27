@@ -1,0 +1,136 @@
+{% extends 'base.html' %}
+
+{% block title %}Airport Ground Operations Desk - SkyWings Staff{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Header -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <span class="badge bg-info text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-1">Terminal Operations</span>
+            <h3 class="fw-bold mb-0 text-dark"><i class="bi bi-person-badge me-2 text-primary"></i>Airport Ground Staff Command Desk</h3>
+            <small class="text-muted">Passenger Check-In, Baggage Checkpoint Scanning, and Gate Boarding Manifests</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('staff.checkin') }}" class="btn btn-success btn-sm fw-bold">
+                <i class="bi bi-pass-fill me-1"></i> Check-In Counter
+            </a>
+            <a href="{{ url_for('staff.baggage_desk') }}" class="btn btn-info btn-sm text-dark fw-bold">
+                <i class="bi bi-luggage-fill me-1"></i> Baggage Scanner
+            </a>
+            <a href="{{ url_for('staff.boarding') }}" class="btn btn-primary btn-sm fw-bold">
+                <i class="bi bi-people-fill me-1"></i> Boarding Gate
+            </a>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Total Check-Ins Processed</div>
+                    <div class="stat-value text-success">{{ total_checkins_today }}</div>
+                </div>
+                <div class="stat-icon bg-success-subtle text-success">
+                    <i class="bi bi-person-check-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Passengers Boarded Today</div>
+                    <div class="stat-value text-primary">{{ total_boarded_today }}</div>
+                </div>
+                <div class="stat-icon bg-primary-subtle text-primary">
+                    <i class="bi bi-airplane-engines"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-12">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Active Luggage in Handling</div>
+                    <div class="stat-value text-info">{{ active_baggage_count }}</div>
+                </div>
+                <div class="stat-icon bg-info-subtle text-info">
+                    <i class="bi bi-luggage-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Operational Action Cards -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-4">
+            <div class="fms-card p-4 h-100 border-start border-4 border-success">
+                <h5 class="fw-bold text-dark"><i class="bi bi-pass me-2 text-success"></i>Passenger Check-In</h5>
+                <p class="text-muted small">Search by PNR or passenger name, verify seat allocation, issue official boarding pass, and tag luggage.</p>
+                <a href="{{ url_for('staff.checkin') }}" class="btn btn-outline-success btn-sm w-100 fw-bold">
+                    Open Check-In Counter &rarr;
+                </a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="fms-card p-4 h-100 border-start border-4 border-info">
+                <h5 class="fw-bold text-dark"><i class="bi bi-qr-code-scan me-2 text-info"></i>Baggage Scanner</h5>
+                <p class="text-muted small">Update baggage handling status (Checked-In &rarr; Security Checked &rarr; Loaded &rarr; In Transit &rarr; Delivered).</p>
+                <a href="{{ url_for('staff.baggage_desk') }}" class="btn btn-outline-info text-dark btn-sm w-100 fw-bold">
+                    Open Baggage Desk &rarr;
+                </a>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="fms-card p-4 h-100 border-start border-4 border-primary">
+                <h5 class="fw-bold text-dark"><i class="bi bi-door-open me-2 text-primary"></i>Gate Boarding</h5>
+                <p class="text-muted small">View live passenger manifests, verify checked-in passengers, mark passengers as boarded, and monitor no-shows.</p>
+                <a href="{{ url_for('staff.boarding') }}" class="btn btn-outline-primary btn-sm w-100 fw-bold">
+                    Open Boarding Gate &rarr;
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Active Flights Operational Radar Table -->
+    <div class="fms-card">
+        <div class="fms-card-header">
+            <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-airplane me-2 text-primary"></i>Today's Terminal Flights</h5>
+        </div>
+        <div class="fms-card-body p-0">
+            <div class="table-responsive">
+                <table class="fms-table">
+                    <thead>
+                        <tr>
+                            <th>Flight No</th>
+                            <th>Route</th>
+                            <th>Departure Time</th>
+                            <th>Gate</th>
+                            <th>Terminal</th>
+                            <th>Status</th>
+                            <th>Operational Shortlink</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in today_flights %}
+                        <tr>
+                            <td><span class="badge bg-primary fs-6 font-monospace">{{ f.flight_number }}</span></td>
+                            <td><strong>{{ f.source_code }}</strong> &rarr; <strong>{{ f.destination_code }}</strong> ({{ f.source }} to {{ f.destination }})</td>
+                            <td>{{ f.departure_time.strftime('%I:%M %p') }}</td>
+                            <td><span class="badge bg-warning text-dark">{{ f.gate }}</span></td>
+                            <td>{{ f.terminal }}</td>
+                            <td><span class="badge {{ f.status_badge_class }}">{{ f.status }}</span></td>
+                            <td>
+                                <a href="{{ url_for('staff.boarding', flight_id=f.id) }}" class="btn btn-sm btn-fms-primary py-1 px-3">
+                                    <i class="bi bi-people-fill me-1"></i> Gate Manifest
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

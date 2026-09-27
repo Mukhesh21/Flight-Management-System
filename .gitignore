@@ -1,0 +1,22 @@
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+
+# Environment & local settings
+.env
+venv/
+env/
+ENV/
+.venv
+
+# Database file (keep schema.sql & seed_data.py for clean instantiation)
+*.sqlite3
+*.db-journal
+
+# IDE & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

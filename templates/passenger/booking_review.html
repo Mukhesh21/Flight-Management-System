@@ -1,0 +1,197 @@
+{% extends 'base.html' %}
+
+{% block title %}Review & Confirm Booking - SkyWings{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-file-earmark-check me-2 text-primary"></i>Review & Confirm Your Flight</h3>
+                    <small class="text-muted">Enter passenger contact details and select add-on baggage</small>
+                </div>
+                <a href="{{ url_for('passenger.seat_select', flight_id=flight.id) }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Change Seat
+                </a>
+            </div>
+
+            <form action="{{ url_for('passenger.checkout') }}" method="POST">
+                <input type="hidden" name="flight_id" value="{{ flight.id }}">
+                <input type="hidden" name="seat_id" value="{{ seat.id }}">
+
+                <div class="row g-4">
+                    <!-- Left Column: Flight Summary & Passenger Details -->
+                    <div class="col-lg-7">
+                        <!-- Flight Summary Card -->
+                        <div class="fms-card p-4 mb-4 bg-light">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <span class="badge bg-primary px-3 py-1 fs-6">{{ flight.flight_number }}</span>
+                                <span class="badge bg-white text-dark border px-2 py-1">{{ flight.airline_name }}</span>
+                            </div>
+
+                            <div class="row g-2 align-items-center my-2 text-center">
+                                <div class="col-4 text-start">
+                                    <div class="flight-time fs-4">{{ flight.departure_time.strftime('%I:%M %p') }}</div>
+                                    <div class="fw-bold text-dark">{{ flight.source }} ({{ flight.source_code }})</div>
+                                    <small class="text-muted">{{ flight.departure_time.strftime('%a, %b %d, %Y') }}</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="flight-duration-line">
+                                        <span class="duration-text">{{ flight.duration }}</span>
+                                        <div class="line"><i class="bi bi-arrow-right"></i></div>
+                                        <small class="text-success fw-semibold">Non-Stop</small>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div class="flight-time fs-4">{{ flight.arrival_time.strftime('%I:%M %p') }}</div>
+                                    <div class="fw-bold text-dark">{{ flight.destination }} ({{ flight.destination_code }})</div>
+                                    <small class="text-muted">{{ flight.arrival_time.strftime('%a, %b %d, %Y') }}</small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between border-top pt-2 mt-3 small text-muted">
+                                <span><i class="bi bi-door-open me-1"></i> Gate <strong>{{ flight.gate }}</strong></span>
+                                <span><i class="bi bi-grid-3x3-gap-fill text-primary me-1"></i> Assigned Seat: <strong class="text-primary fs-6">{{ seat.seat_number }} ({{ seat.seat_class }})</strong></span>
+                            </div>
+                        </div>
+
+                        <!-- Passenger Details Input Form -->
+                        <div class="fms-card p-4 mb-4">
+                            <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">Passenger Information</h5>
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-muted small">Full Legal Name *</label>
+                                    <input type="text" name="passenger_name" class="form-control" value="{{ user.full_name }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-muted small">Email Address (for E-Ticket) *</label>
+                                    <input type="email" name="passenger_email" class="form-control" value="{{ user.email }}" required>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label fw-semibold text-muted small">Phone Number *</label>
+                                    <input type="text" name="passenger_phone" class="form-control" value="{{ user.phone or '+91 98765 43210' }}" required>
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold text-muted small">Age</label>
+                                    <input type="number" name="passenger_age" class="form-control" value="26" min="1" max="110">
+                                </div>
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold text-muted small">Gender</label>
+                                    <select name="passenger_gender" class="form-select">
+                                        <option value="Male" selected>Male</option>
+                                        <option value="Female">Female</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12">
+                                    <label class="form-label fw-semibold text-muted small">Passport / National ID Number</label>
+                                    <input type="text" name="passport_number" class="form-control" value="{{ user.passenger_profile.passport_number if user.passenger_profile else 'Z9823412' }}" placeholder="e.g. Z9823412">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Baggage Selection -->
+                        <div class="fms-card p-4 mb-4">
+                            <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">Baggage Allowance</h5>
+                            <div class="form-check p-3 border rounded-3 mb-2 bg-light">
+                                <input class="form-check-input" type="radio" name="baggage_option" id="bag1" value="15kg_standard" checked onchange="updateBaggagePrice(0)">
+                                <label class="form-check-label d-flex justify-content-between w-100" for="bag1">
+                                    <span>
+                                        <strong>Standard Check-In (15 kg) + 7 kg Cabin</strong>
+                                        <small class="d-block text-muted">Complimentary with standard ticket fare</small>
+                                    </span>
+                                    <span class="text-success fw-bold">FREE</span>
+                                </label>
+                            </div>
+                            <div class="form-check p-3 border rounded-3 mb-2">
+                                <input class="form-check-input" type="radio" name="baggage_option" id="bag2" value="20kg_extra" onchange="updateBaggagePrice(800)">
+                                <label class="form-check-label d-flex justify-content-between w-100" for="bag2">
+                                    <span>
+                                        <strong>Extra Luggage (20 kg Total) + 7 kg Cabin</strong>
+                                        <small class="d-block text-muted">+5 kg extra check-in baggage allowance</small>
+                                    </span>
+                                    <span class="fw-bold text-dark">+₹800</span>
+                                </label>
+                            </div>
+                            <div class="form-check p-3 border rounded-3">
+                                <input class="form-check-input" type="radio" name="baggage_option" id="bag3" value="25kg_heavy" onchange="updateBaggagePrice(1500)">
+                                <label class="form-check-label d-flex justify-content-between w-100" for="bag3">
+                                    <span>
+                                        <strong>Heavy / Family Allowance (25 kg Total)</strong>
+                                        <small class="d-block text-muted">+10 kg heavy check-in allowance</small>
+                                    </span>
+                                    <span class="fw-bold text-dark">+₹1,500</span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Right Column: Price Breakdown & Payment -->
+                    <div class="col-lg-5">
+                        <div class="fms-card p-4 sticky-top" style="top: 90px;">
+                            <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">Price Breakdown</h5>
+
+                            <div class="d-flex justify-content-between mb-2 text-muted small">
+                                <span>Base Airfare:</span>
+                                <span class="fw-semibold text-dark">{{ base_fare|format_currency }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 text-muted small">
+                                <span>Seat Selection ({{ seat.seat_number }} - {{ seat.seat_class }}):</span>
+                                <span class="fw-semibold text-dark">+{{ seat_extra|format_currency }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 text-muted small">
+                                <span>Airport Fees & Taxes (12%):</span>
+                                <span class="fw-semibold text-dark">+{{ taxes|format_currency }}</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-2 text-muted small">
+                                <span>Add-on Baggage Fee:</span>
+                                <span class="fw-semibold text-dark" id="baggageFeeDisplay">₹0.00</span>
+                            </div>
+
+                            <hr class="my-3">
+
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <span class="fw-bold fs-5">Final Total:</span>
+                                <span class="fs-3 fw-bold text-primary" id="finalTotalDisplay">{{ total_fare|format_currency }}</span>
+                            </div>
+
+                            <h6 class="fw-bold mb-2 text-dark">Select Payment Method (Simulation)</h6>
+                            <div class="mb-3">
+                                <select name="payment_method" class="form-select">
+                                    <option value="Credit Card" selected>Credit Card (Instant Approval)</option>
+                                    <option value="Debit Card">Debit Card</option>
+                                    <option value="UPI">UPI / QR Code</option>
+                                    <option value="Net Banking">Net Banking</option>
+                                </select>
+                            </div>
+
+                            <button type="submit" class="btn btn-fms-accent w-100 py-3 fw-bold shadow">
+                                <i class="bi bi-lock-fill me-1"></i> Pay & Confirm Booking
+                            </button>
+
+                            <div class="text-center mt-3 text-muted small">
+                                <i class="bi bi-shield-lock-fill text-success me-1"></i> 256-Bit SSL Encrypted Academic Transaction
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const baseTotal = {{ total_fare }};
+function updateBaggagePrice(extraFee) {
+    const feeEl = document.getElementById('baggageFeeDisplay');
+    const totalEl = document.getElementById('finalTotalDisplay');
+    feeEl.textContent = '₹' + extraFee.toLocaleString('en-IN') + '.00';
+    const newTotal = baseTotal + extraFee;
+    totalEl.textContent = '₹' + newTotal.toLocaleString('en-IN') + '.00';
+}
+</script>
+{% endblock %}

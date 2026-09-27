@@ -1,0 +1,133 @@
+{% extends 'base.html' %}
+
+{% block title %}Flight Search Results - SkyWings{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Search / Filter Bar -->
+    <div class="fms-card p-4 mb-4 shadow-sm">
+        <form action="{{ url_for('passenger.search') }}" method="GET">
+            <div class="row g-3 align-items-end">
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Departure City / Code</label>
+                    <input type="text" name="source" class="form-control" placeholder="Source (e.g. Chennai, MAA)" value="{{ source }}">
+                </div>
+                <div class="col-lg-3 col-md-6">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Destination City / Code</label>
+                    <input type="text" name="destination" class="form-control" placeholder="Destination (e.g. Delhi, DEL)" value="{{ destination }}">
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Travel Date</label>
+                    <input type="date" name="date" class="form-control" value="{{ travel_date }}">
+                </div>
+                <div class="col-lg-2 col-md-6">
+                    <label class="form-label fw-bold small text-muted text-uppercase">Passengers</label>
+                    <select name="passengers" class="form-select">
+                        <option value="1" {% if passengers_count == 1 %}selected{% endif %}>1 Passenger</option>
+                        <option value="2" {% if passengers_count == 2 %}selected{% endif %}>2 Passengers</option>
+                        <option value="3" {% if passengers_count == 3 %}selected{% endif %}>3 Passengers</option>
+                        <option value="4" {% if passengers_count == 4 %}selected{% endif %}>4+ Passengers</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 col-md-12">
+                    <button type="submit" class="btn btn-fms-accent w-100 fw-bold">
+                        <i class="bi bi-search me-1"></i> Update Search
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Search Results Header -->
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h4 class="fw-bold mb-0">
+                {% if source or destination %}
+                    Flights: <span class="text-primary">{{ source or 'Anywhere' }}</span> &rarr; <span class="text-primary">{{ destination or 'Anywhere' }}</span>
+                {% else %}
+                    All Scheduled Flights
+                {% endif %}
+            </h4>
+            <small class="text-muted">Showing {{ flights|length }} available flights</small>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('passenger.search') }}" class="btn btn-outline-secondary btn-sm">Clear Filters</a>
+        </div>
+    </div>
+
+    <!-- Flight Cards List -->
+    {% if flights %}
+        {% for flight in flights %}
+        <div class="flight-card">
+            <div class="row align-items-center g-3">
+                <!-- Airline & Flight Info -->
+                <div class="col-lg-3 col-md-12">
+                    <div class="d-flex align-items-center gap-2 mb-1">
+                        <span class="badge bg-primary fs-6 px-2 py-1">{{ flight.flight_number }}</span>
+                        <span class="badge {{ flight.status_badge_class }}">{{ flight.status }}</span>
+                    </div>
+                    <div class="fw-bold text-dark">{{ flight.airline_name }}</div>
+                    <small class="text-muted"><i class="bi bi-airplane-fill me-1"></i>{{ flight.aircraft.model if flight.aircraft else 'Airbus A320' }}</small>
+                </div>
+
+                <!-- Timing & Route Line -->
+                <div class="col-lg-5 col-md-7">
+                    <div class="row align-items-center text-center">
+                        <div class="col-4 text-start">
+                            <div class="flight-time">{{ flight.departure_time.strftime('%I:%M %p') }}</div>
+                            <div class="flight-airport-code">{{ flight.source_code }}</div>
+                            <div class="text-muted small text-truncate">{{ flight.source }}</div>
+                        </div>
+                        <div class="col-4">
+                            <div class="flight-duration-line">
+                                <span class="duration-text">{{ flight.duration }}</span>
+                                <div class="line"><i class="bi bi-arrow-right"></i></div>
+                                <span class="text-success small fw-semibold">Non-Stop</span>
+                            </div>
+                        </div>
+                        <div class="col-4 text-end">
+                            <div class="flight-time">{{ flight.arrival_time.strftime('%I:%M %p') }}</div>
+                            <div class="flight-airport-code">{{ flight.destination_code }}</div>
+                            <div class="text-muted small text-truncate">{{ flight.destination }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gate, Available Seats & Operational Info -->
+                <div class="col-lg-2 col-md-2 text-center text-md-start">
+                    <div class="small text-muted mb-1">
+                        <i class="bi bi-door-open text-primary me-1"></i> Gate: <strong>{{ flight.gate }}</strong> ({{ flight.terminal }})
+                    </div>
+                    <div class="small {% if flight.available_seats < 10 %}text-danger fw-bold{% else %}text-muted{% endif %}">
+                        <i class="bi bi-person-check me-1"></i> Available: <strong>{{ flight.available_seats }}</strong> seats
+                    </div>
+                    <div class="small text-muted">
+                        <i class="bi bi-calendar-event me-1"></i> {{ flight.departure_time.strftime('%b %d, %Y') }}
+                    </div>
+                </div>
+
+                <!-- Pricing & Action Button -->
+                <div class="col-lg-2 col-md-3 text-end">
+                    <div class="text-muted small">Total Fare</div>
+                    <div class="fs-4 fw-bold text-dark mb-2">{{ flight.base_price|format_currency }}</div>
+                    {% if flight.is_bookable %}
+                        <a href="{{ url_for('passenger.seat_select', flight_id=flight.id) }}" class="btn btn-fms-primary btn-sm w-100 py-2 fw-semibold">
+                            Select Seat <i class="bi bi-chevron-right ms-1"></i>
+                        </a>
+                    {% else %}
+                        <button class="btn btn-secondary btn-sm w-100 py-2 disabled">Flight Closed</button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <div class="fms-card p-5 text-center">
+            <i class="bi bi-search text-muted fs-1 mb-3"></i>
+            <h5 class="fw-bold">No Flights Found for this Criteria</h5>
+            <p class="text-muted small mb-3">Try adjusting your travel date, city codes, or browse all scheduled flights.</p>
+            <a href="{{ url_for('passenger.search') }}" class="btn btn-outline-primary btn-sm px-4">View All Scheduled Flights</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

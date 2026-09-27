@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+
+{% block title %}Sign In - SkyWings Smart Flight Management{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-5 col-md-8">
+            <div class="fms-card shadow-lg border-0">
+                <div class="fms-card-header bg-primary text-white py-3 px-4 d-flex justify-content-between align-items-center">
+                    <div>
+                        <h4 class="mb-0 fw-bold text-white"><i class="bi bi-box-arrow-in-right me-2"></i>Sign In</h4>
+                        <small class="text-white-50">Access SkyWings Flight Management Portal</small>
+                    </div>
+                    <i class="bi bi-airplane-engines fs-2 text-info"></i>
+                </div>
+                <div class="fms-card-body p-4">
+                    <!-- Quick Demo Credentials Fill Buttons -->
+                    <div class="mb-4 p-3 bg-light rounded-3 border">
+                        <small class="fw-bold text-muted text-uppercase d-block mb-2">
+                            <i class="bi bi-lightning-charge-fill text-warning me-1"></i> Quick Demo Login Fill:
+                        </small>
+                        <div class="d-flex flex-wrap gap-2">
+                            <button type="button" class="btn btn-outline-primary btn-sm flex-grow-1" onclick="fillLogin('admin', 'admin123')">
+                                <i class="bi bi-shield-lock me-1"></i> Admin
+                            </button>
+                            <button type="button" class="btn btn-outline-info btn-sm text-dark flex-grow-1" onclick="fillLogin('staff', 'staff123')">
+                                <i class="bi bi-person-badge me-1"></i> Airport Staff
+                            </button>
+                            <button type="button" class="btn btn-outline-success btn-sm flex-grow-1" onclick="fillLogin('mukhesh', 'pass123')">
+                                <i class="bi bi-person me-1"></i> Passenger
+                            </button>
+                        </div>
+                    </div>
+
+                    <form action="{{ url_for('auth.login', next=request.args.get('next', '')) }}" method="POST">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted small">Username or Email Address</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-person"></i></span>
+                                <input type="text" id="login_input" name="login_input" class="form-control" placeholder="Enter username or email" required autofocus>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold text-muted small">Password</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light"><i class="bi bi-lock"></i></span>
+                                <input type="password" id="password" name="password" class="form-control" placeholder="Enter your password" required>
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center mb-4">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="remember" name="remember" checked>
+                                <label class="form-check-label small text-muted" for="remember">Remember me</label>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="btn btn-fms-accent w-100 py-2 fw-bold mb-3">
+                            <i class="bi bi-box-arrow-in-right me-1"></i> Sign In to Portal
+                        </button>
+                    </form>
+
+                    <div class="text-center border-top pt-3 mt-3 small text-muted">
+                        Don't have an account? <a href="{{ url_for('auth.register') }}" class="fw-bold text-primary">Register as Passenger</a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function fillLogin(username, password) {
+    document.getElementById('login_input').value = username;
+    document.getElementById('password').value = password;
+}
+</script>
+{% endblock %}

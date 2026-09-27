@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}Select Your Seat - {{ flight.flight_number }} | SkyWings{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb & Flight Header -->
+    <div class="fms-card p-3 mb-4 bg-white">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+            <div>
+                <span class="badge bg-primary px-2 py-1 me-2">{{ flight.flight_number }}</span>
+                <span class="fw-bold fs-5 text-dark">{{ flight.source }} ({{ flight.source_code }}) &rarr; {{ flight.destination }} ({{ flight.destination_code }})</span>
+                <span class="text-muted ms-2">| {{ flight.departure_time.strftime('%b %d, %Y at %I:%M %p') }}</span>
+            </div>
+            <div class="d-flex gap-2 align-items-center">
+                <span class="badge bg-light text-dark border"><i class="bi bi-airplane me-1"></i>{{ flight.aircraft.model if flight.aircraft else 'Airbus A320' }}</span>
+                <span class="badge bg-success-subtle text-success fw-bold"><i class="bi bi-door-open me-1"></i>Gate {{ flight.gate }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden input for base price -->
+    <input type="hidden" id="flightBasePrice" value="{{ flight.base_price }}">
+
+    <div class="row g-4">
+        <!-- Left Column: Visual Aircraft Fuselage -->
+        <div class="col-lg-8">
+            <div class="fms-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 pb-2 border-bottom">
+                    <h5 class="fw-bold mb-0"><i class="bi bi-grid-3x3-gap-fill text-primary me-2"></i>Select Aircraft Seat</h5>
+                    <div class="d-flex gap-3 small">
+                        <span class="d-flex align-items-center gap-1"><span class="seat-btn" style="width: 16px; height: 16px; display:inline-block;"></span> Available</span>
+                        <span class="d-flex align-items-center gap-1"><span class="seat-btn selected" style="width: 16px; height: 16px; display:inline-block;"></span> Selected</span>
+                        <span class="d-flex align-items-center gap-1"><span class="seat-btn occupied" style="width: 16px; height: 16px; display:inline-block;"></span> Occupied</span>
+                    </div>
+                </div>
+
+                <!-- Aircraft Container -->
+                <div class="fuselage-container">
+                    <div class="cockpit">
+                        <i class="bi bi-airplane-engines fs-5 d-block mb-1"></i>
+                        AIRCRAFT FRONT / COCKPIT
+                    </div>
+
+                    <!-- Column Letters Indicator -->
+                    <div class="seat-grid-row mb-3 text-muted fw-bold small">
+                        <span class="row-number"></span>
+                        <span class="seat-btn border-0 bg-transparent">A</span>
+                        <span class="seat-btn border-0 bg-transparent">B</span>
+                        <span class="seat-btn border-0 bg-transparent">C</span>
+                        <span class="aisle-gap text-center" style="font-size: 0.7rem;">AISLE</span>
+                        <span class="seat-btn border-0 bg-transparent">D</span>
+                        <span class="seat-btn border-0 bg-transparent">E</span>
+                        <span class="seat-btn border-0 bg-transparent">F</span>
+                    </div>
+
+                    <!-- Seats Rendered Grouped by Rows -->
+                    <div class="cabin-layout">
+                        {% set ns = namespace(current_row=-1, row_seats=[]) %}
+                        
+                        {# Group seats by row number dynamically from seat_number #}
+                        {% for s in seats %}
+                            {% set row_num = s.seat_number[:-1] %}
+                            
+                            {# Render Row #}
+                            {% if loop.first or row_num != ns.current_row %}
+                                {% if not loop.first %}
+                                    </div> <!-- close previous row -->
+                                {% endif %}
+                                {% set ns.current_row = row_num %}
+                                
+                                {# Class Section Header #}
+                                {% if s.seat_class == 'First' and row_num == '1' %}
+                                    <div class="text-center my-2 text-warning fw-bold small text-uppercase letter-spacing-1 border-bottom pb-1">
+                                        <i class="bi bi-star-fill me-1"></i> First Class (2x2 Recliners)
+                                    </div>
+                                {% elif s.seat_class == 'Business' and row_num == '3' %}
+                                    <div class="text-center my-2 text-primary fw-bold small text-uppercase letter-spacing-1 border-bottom pb-1">
+                                        <i class="bi bi-gem me-1"></i> Business Class (Priority Legroom)
+                                    </div>
+                                {% elif s.seat_class == 'Economy' and row_num == '7' %}
+                                    <div class="text-center my-2 text-muted fw-bold small text-uppercase letter-spacing-1 border-bottom pb-1">
+                                        <i class="bi bi-people me-1"></i> Economy Cabin
+                                    </div>
+                                {% endif %}
+
+                                <div class="seat-grid-row" id="row-{{ row_num }}">
+                                    <span class="row-number">{{ row_num }}</span>
+                            {% endif %}
+
+                            {% set col = s.seat_number[-1] %}
+                            
+                            {# Handle aisle spacing #}
+                            {% if s.seat_class in ['First', 'Business'] %}
+                                {# In First/Business (2x2: A, B | E, F), add gap before E #}
+                                {% if col == 'E' %}
+                                    <span class="aisle-gap"></span>
+                                    <span class="seat-btn border-0 bg-transparent"></span>
+                                {% endif %}
+                            {% else %}
+                                {# In Economy (3x3: A, B, C | D, E, F), add gap before D #}
+                                {% if col == 'D' %}
+                                    <span class="aisle-gap"></span>
+                                {% endif %}
+                            {% endif %}
+
+                            <button type="button" 
+                                class="seat-btn {% if s.is_occupied %}occupied{% endif %} {% if s.seat_class == 'First' %}first-class{% elif s.seat_class == 'Business' %}business-class{% endif %}"
+                                data-seat-id="{{ s.id }}"
+                                data-seat-number="{{ s.seat_number }}"
+                                data-seat-class="{{ s.seat_class }}"
+                                data-extra-price="{{ s.extra_price }}"
+                                title="Seat {{ s.seat_number }} ({{ s.seat_class }}) {% if s.is_occupied %}- Occupied{% else %}- ₹{{ s.extra_price }} extra{% endif %}"
+                                {% if s.is_occupied %}disabled{% endif %}>
+                                {{ s.seat_number }}
+                            </button>
+
+                            {% if loop.last %}
+                                </div> <!-- close last row -->
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+
+                    <div class="text-center text-muted small mt-4 pt-2 border-top">
+                        <i class="bi bi-arrow-down"></i> Aircraft Rear / Galley & Restrooms
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Column: Booking Summary & Checkout Form -->
+        <div class="col-lg-4">
+            <div class="fms-card p-4 sticky-top" style="top: 90px;">
+                <h5 class="fw-bold mb-3 text-dark border-bottom pb-2">Seat Summary</h5>
+                
+                <div class="p-3 bg-light rounded-3 mb-3">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Selected Seat:</span>
+                        <span class="fw-bold fs-5 text-primary" id="selectedSeatNumber">None</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span class="text-muted small">Cabin Class:</span>
+                        <span class="fw-semibold" id="selectedSeatClass">-</span>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span class="text-muted small">Seat Upgrade Fee:</span>
+                        <span class="fw-semibold text-success" id="selectedSeatExtra">₹0</span>
+                    </div>
+                </div>
+
+                <div class="border-top pt-3 mb-4">
+                    <div class="d-flex justify-content-between mb-1 small text-muted">
+                        <span>Base Fare:</span>
+                        <span>{{ flight.base_price|format_currency }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-1 small text-muted">
+                        <span>Airport Taxes & GST (12%):</span>
+                        <span>₹{{ ((flight.base_price * 0.12)|round(2))|format_currency }}</span>
+                    </div>
+                    <hr class="my-2">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fw-bold">Estimated Total:</span>
+                        <span class="fs-4 fw-bold text-dark" id="selectedTotalFare">{{ flight.base_price|format_currency }}</span>
+                    </div>
+                </div>
+
+                <form action="{{ url_for('passenger.checkout') }}" method="GET">
+                    <input type="hidden" name="flight_id" value="{{ flight.id }}">
+                    <input type="hidden" name="seat_id" id="selected_seat_id" value="">
+                    
+                    <button type="submit" id="btnProceedCheckout" class="btn btn-fms-accent w-100 py-3 fw-bold shadow-sm" disabled>
+                        Proceed to Passenger Details <i class="bi bi-arrow-right ms-1"></i>
+                    </button>
+                </form>
+
+                <div class="text-muted small text-center mt-3">
+                    <i class="bi bi-shield-check text-success me-1"></i> Real-time seat inventory locked upon checkout
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{{ url_for('static', filename='js/seatmap.js') }}"></script>
+{% endblock %}

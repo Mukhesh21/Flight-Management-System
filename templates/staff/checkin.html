@@ -1,0 +1,110 @@
+{% extends 'base.html' %}
+
+{% block title %}Passenger Check-In Counter - SkyWings Staff{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h3 class="fw-bold mb-1"><i class="bi bi-pass-fill me-2 text-success"></i>Airport Passenger Check-In Counter</h3>
+                    <small class="text-muted">Search reservation by PNR reference or passenger name and perform official check-in</small>
+                </div>
+                <a href="{{ url_for('staff.desk') }}" class="btn btn-outline-secondary btn-sm">
+                    <i class="bi bi-arrow-left me-1"></i> Operations Desk
+                </a>
+            </div>
+
+            <!-- Search Card -->
+            <div class="fms-card p-4 mb-4 shadow-sm">
+                <form action="{{ url_for('staff.checkin') }}" method="GET">
+                    <label class="form-label fw-bold text-dark">Lookup Reservation (PNR Reference or Passenger Name):</label>
+                    <div class="input-group">
+                        <span class="input-group-text bg-white"><i class="bi bi-search"></i></span>
+                        <input type="text" name="q" class="form-control form-control-lg" placeholder="e.g. BK10234 or Mukhesh" value="{{ search_query }}" autofocus required>
+                        <button type="submit" class="btn btn-success btn-lg px-4 fw-bold">Search Reservation</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Booking Search Result -->
+            {% if booking %}
+            <div class="fms-card p-4 mb-4 shadow">
+                <div class="d-flex flex-wrap justify-content-between align-items-center border-bottom pb-3 mb-3 gap-2">
+                    <div>
+                        <span class="badge bg-primary px-3 py-1 fs-6 font-monospace me-2">{{ booking.flight.flight_number }}</span>
+                        <span class="fw-bold fs-5 text-dark">{{ booking.passenger_name }}</span>
+                    </div>
+                    <span class="badge {{ booking.status_badge }} fs-6 px-3 py-2 text-uppercase">{{ booking.status }}</span>
+                </div>
+
+                <div class="row g-3 mb-4">
+                    <div class="col-md-3 col-6">
+                        <small class="text-muted text-uppercase fw-bold d-block">PNR Reference</small>
+                        <span class="fw-bold text-primary fs-6 font-monospace">{{ booking.booking_reference }}</span>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <small class="text-muted text-uppercase fw-bold d-block">Flight Route</small>
+                        <span class="fw-bold text-dark fs-6">{{ booking.flight.source_code }} &rarr; {{ booking.flight.destination_code }}</span>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <small class="text-muted text-uppercase fw-bold d-block">Assigned Seat</small>
+                        <span class="fw-bold text-success fs-5">{{ booking.seat.seat_number }}</span> ({{ booking.seat.seat_class }})
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <small class="text-muted text-uppercase fw-bold d-block">Departure Gate</small>
+                        <span class="fw-bold text-dark fs-6">{{ booking.flight.gate }} ({{ booking.flight.terminal }})</span>
+                    </div>
+                </div>
+
+                <!-- Baggage list attached to booking -->
+                <div class="p-3 bg-light rounded-3 border mb-4">
+                    <h6 class="fw-bold mb-2 text-dark"><i class="bi bi-luggage-fill text-info me-1"></i> Checked Baggage Tags:</h6>
+                    {% if booking.baggage_items.all() %}
+                        {% for bg in booking.baggage_items %}
+                        <div class="d-flex align-items-center justify-content-between small border-bottom py-1">
+                            <div>
+                                <span class="badge bg-secondary font-monospace me-2">{{ bg.baggage_tag }}</span>
+                                <span>{{ bg.weight_kg }} kg ({{ bg.baggage_type }})</span>
+                            </div>
+                            <span class="badge {{ bg.status_badge_class }}">{{ bg.status }}</span>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <small class="text-muted">No checked baggage registered for this booking.</small>
+                    {% endif %}
+                </div>
+
+                <!-- Check-in Action Form -->
+                {% if booking.status == 'Confirmed' %}
+                    <form action="{{ url_for('staff.checkin') }}" method="POST">
+                        <input type="hidden" name="booking_id" value="{{ booking.id }}">
+                        <div class="d-flex justify-content-end gap-2">
+                            <button type="submit" class="btn btn-success btn-lg fw-bold px-4 shadow">
+                                <i class="bi bi-check2-circle me-1"></i> Perform Check-In & Issue Boarding Pass
+                            </button>
+                        </div>
+                    </form>
+                {% elif booking.status in ['Checked-In', 'Boarded'] %}
+                    <div class="alert alert-success d-flex justify-content-between align-items-center mb-0">
+                        <div>
+                            <i class="bi bi-check-circle-fill me-2 fs-5"></i>
+                            Passenger is already checked in. Boarding Pass: <strong>{{ booking.checkin_record.boarding_pass_no if booking.checkin_record else 'Issued' }}</strong>
+                        </div>
+                        <a href="{{ url_for('passenger.view_booking', booking_ref=booking.booking_reference) }}" class="btn btn-outline-success btn-sm fw-bold">
+                            <i class="bi bi-printer me-1"></i> Print Boarding Pass
+                        </a>
+                    </div>
+                {% elif booking.status == 'Cancelled' %}
+                    <div class="alert alert-danger mb-0">
+                        <i class="bi bi-x-circle-fill me-2"></i> This booking is cancelled and cannot be checked in.
+                    </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

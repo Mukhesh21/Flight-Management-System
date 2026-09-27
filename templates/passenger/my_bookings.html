@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+
+{% block title %}My Bookings - SkyWings FMS{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-ticket-perforated-fill me-2 text-primary"></i>My Flight Bookings</h3>
+            <small class="text-muted">Manage your travel reservations, boarding passes, and cancellations</small>
+        </div>
+        <a href="{{ url_for('passenger.search') }}" class="btn btn-fms-accent btn-sm fw-semibold">
+            <i class="bi bi-plus-lg me-1"></i> Book New Flight
+        </a>
+    </div>
+
+    <!-- Status Filters Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2">
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'all' %}active bg-primary{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('passenger.my_bookings', status='all') }}">
+                All Bookings ({{ bookings|length }})
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'Confirmed' %}active bg-success{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('passenger.my_bookings', status='Confirmed') }}">
+                Confirmed
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'Checked-In' %}active bg-info text-dark{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('passenger.my_bookings', status='Checked-In') }}">
+                Checked-In
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if status_filter == 'Cancelled' %}active bg-danger{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('passenger.my_bookings', status='Cancelled') }}">
+                Cancelled
+            </a>
+        </li>
+    </ul>
+
+    {% if bookings %}
+        <div class="row g-3">
+            {% for b in bookings %}
+            <div class="col-12">
+                <div class="fms-card p-4">
+                    <div class="row align-items-center g-3">
+                        <div class="col-lg-3 col-md-4">
+                            <div class="d-flex align-items-center gap-2 mb-1">
+                                <span class="badge bg-primary fs-6 px-2 py-1">{{ b.flight.flight_number }}</span>
+                                <span class="badge {{ b.status_badge }}">{{ b.status }}</span>
+                            </div>
+                            <div class="font-monospace fw-bold text-dark">PNR: {{ b.booking_reference }}</div>
+                            <small class="text-muted">Booked on {{ b.booking_date.strftime('%b %d, %Y') }}</small>
+                        </div>
+
+                        <div class="col-lg-5 col-md-5">
+                            <div class="row align-items-center text-center">
+                                <div class="col-4 text-start">
+                                    <div class="fw-bold fs-5 text-dark">{{ b.flight.departure_time.strftime('%I:%M %p') }}</div>
+                                    <div class="text-primary fw-semibold">{{ b.flight.source_code }}</div>
+                                    <small class="text-muted">{{ b.flight.source }}</small>
+                                </div>
+                                <div class="col-4">
+                                    <div class="flight-duration-line">
+                                        <span class="duration-text">{{ b.flight.duration }}</span>
+                                        <div class="line"><i class="bi bi-arrow-right"></i></div>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div class="fw-bold fs-5 text-dark">{{ b.flight.arrival_time.strftime('%I:%M %p') }}</div>
+                                    <div class="text-primary fw-semibold">{{ b.flight.destination_code }}</div>
+                                    <small class="text-muted">{{ b.flight.destination }}</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-lg-2 col-md-3 text-center text-md-start">
+                            <div class="small text-muted">Seat: <strong class="text-dark">{{ b.seat.seat_number }}</strong> ({{ b.seat.seat_class }})</div>
+                            <div class="small text-muted">Gate: <strong class="text-dark">{{ b.flight.gate }}</strong></div>
+                            <div class="fw-bold text-dark mt-1">{{ b.total_fare|format_currency }}</div>
+                        </div>
+
+                        <div class="col-lg-2 col-md-12 text-end">
+                            <a href="{{ url_for('passenger.view_booking', booking_ref=b.booking_reference) }}" class="btn btn-fms-primary btn-sm w-100 py-2">
+                                <i class="bi bi-ticket-perforated me-1"></i> View Ticket
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="fms-card p-5 text-center">
+            <i class="bi bi-journal-x text-muted fs-1 mb-2"></i>
+            <h5 class="fw-bold">No Bookings Found</h5>
+            <p class="text-muted small mb-3">You don't have any bookings under this filter status.</p>
+            <a href="{{ url_for('passenger.search') }}" class="btn btn-fms-accent btn-sm px-4">Search & Book Flights</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

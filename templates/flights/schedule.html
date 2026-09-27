@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}Airport Flight Information Display (FIDS) - SkyWings{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <span class="badge bg-primary text-white px-3 py-1 rounded-pill fw-bold text-uppercase mb-1">Live Flight Radar</span>
+            <h3 class="fw-bold mb-0 text-dark"><i class="bi bi-broadcast me-2 text-primary"></i>Airport Flight Schedule Board</h3>
+            <small class="text-muted">Live departures and arrivals with gate information and real-time operational statuses</small>
+        </div>
+        <div class="d-flex align-items-center gap-2">
+            <span class="badge bg-light text-dark border px-3 py-2"><i class="bi bi-clock me-1 text-primary"></i>UTC Time: <strong>{{ now.strftime('%I:%M %p') }}</strong></span>
+        </div>
+    </div>
+
+    <!-- Schedule Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2" id="fidsTab" role="tablist">
+        <li class="nav-item" role="presentation">
+            <button class="nav-link active bg-primary px-4 fw-bold" id="departures-tab" data-bs-toggle="pill" data-bs-target="#departures" type="button" role="tab">
+                <i class="bi bi-airplane-engines me-1"></i> Departures
+            </button>
+        </li>
+        <li class="nav-item" role="presentation">
+            <button class="nav-link bg-light text-dark border px-4 fw-bold" id="arrivals-tab" data-bs-toggle="pill" data-bs-target="#arrivals" type="button" role="tab">
+                <i class="bi bi-airplane me-1"></i> Arrivals
+            </button>
+        </li>
+    </ul>
+
+    <div class="tab-content" id="fidsTabContent">
+        <!-- Departures Tab -->
+        <div class="tab-pane fade show active" id="departures" role="tabpanel">
+            <div class="fms-card">
+                <div class="fms-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="fms-table">
+                            <thead>
+                                <tr>
+                                    <th>Flight No</th>
+                                    <th>Airline</th>
+                                    <th>Destination</th>
+                                    <th>Scheduled Time</th>
+                                    <th>Terminal / Gate</th>
+                                    <th>Aircraft</th>
+                                    <th>Status</th>
+                                    <th class="text-end">Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for f in departures %}
+                                <tr>
+                                    <td><span class="badge bg-primary fs-6 px-2 py-1 font-monospace">{{ f.flight_number }}</span></td>
+                                    <td>{{ f.airline_name }}</td>
+                                    <td>
+                                        <div class="fw-bold text-dark fs-6">{{ f.destination }} ({{ f.destination_code }})</div>
+                                        <small class="text-muted">From {{ f.source }} ({{ f.source_code }})</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ f.departure_time.strftime('%I:%M %p') }}</div>
+                                        <small class="text-muted">{{ f.departure_time.strftime('%b %d') }}</small>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">{{ f.terminal }} - Gate {{ f.gate }}</span></td>
+                                    <td>{{ f.aircraft.model if f.aircraft else 'Airbus A320' }}</td>
+                                    <td><span class="badge {{ f.status_badge_class }} fs-6">{{ f.status }}</span></td>
+                                    <td class="text-end">
+                                        {% if f.is_bookable %}
+                                            <a href="{{ url_for('passenger.seat_select', flight_id=f.id) }}" class="btn btn-sm btn-outline-primary py-1">
+                                                Book &rarr;
+                                            </a>
+                                        {% else %}
+                                            <span class="text-muted small">Closed</span>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Arrivals Tab -->
+        <div class="tab-pane fade" id="arrivals" role="tabpanel">
+            <div class="fms-card">
+                <div class="fms-card-body p-0">
+                    <div class="table-responsive">
+                        <table class="fms-table">
+                            <thead>
+                                <tr>
+                                    <th>Flight No</th>
+                                    <th>Airline</th>
+                                    <th>Origin (From)</th>
+                                    <th>Arrival Time</th>
+                                    <th>Gate / Belt</th>
+                                    <th>Aircraft</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for f in arrivals %}
+                                <tr>
+                                    <td><span class="badge bg-primary fs-6 px-2 py-1 font-monospace">{{ f.flight_number }}</span></td>
+                                    <td>{{ f.airline_name }}</td>
+                                    <td>
+                                        <div class="fw-bold text-dark fs-6">{{ f.source }} ({{ f.source_code }})</div>
+                                        <small class="text-muted">To {{ f.destination }} ({{ f.destination_code }})</small>
+                                    </td>
+                                    <td>
+                                        <div class="fw-bold">{{ f.arrival_time.strftime('%I:%M %p') }}</div>
+                                        <small class="text-muted">{{ f.arrival_time.strftime('%b %d') }}</small>
+                                    </td>
+                                    <td><span class="badge bg-light text-dark border">Gate {{ f.gate }}</span></td>
+                                    <td>{{ f.aircraft.model if f.aircraft else 'Airbus A320' }}</td>
+                                    <td><span class="badge {{ f.status_badge_class }} fs-6">{{ f.status }}</span></td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

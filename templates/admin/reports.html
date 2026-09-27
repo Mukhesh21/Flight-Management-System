@@ -1,0 +1,153 @@
+{% extends 'base.html' %}
+
+{% block title %}Operational Reports & Analytics - SkyWings Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-lg-5 py-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3 no-print">
+        <div>
+            <h3 class="fw-bold mb-1"><i class="bi bi-file-earmark-bar-graph me-2 text-primary"></i>Operational Reports & Audit Exports</h3>
+            <small class="text-muted">Export clean tabular reports for flight performance, passenger manifests, and baggage logistics</small>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary btn-sm">
+                <i class="bi bi-printer me-1"></i> Print Report
+            </button>
+            <a href="{{ url_for('admin.reports', type=report_type, download='csv') }}" class="btn btn-success btn-sm fw-bold">
+                <i class="bi bi-filetype-csv me-1"></i> Download CSV Export
+            </a>
+        </div>
+    </div>
+
+    <!-- Report Type Tabs -->
+    <ul class="nav nav-pills mb-4 gap-2 no-print">
+        <li class="nav-item">
+            <a class="nav-link {% if report_type == 'flights' %}active bg-primary{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('admin.reports', type='flights') }}">
+                <i class="bi bi-airplane me-1"></i> Flight Performance Report
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if report_type == 'passengers' %}active bg-primary{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('admin.reports', type='passengers') }}">
+                <i class="bi bi-people me-1"></i> Passenger & Manifest Report
+            </a>
+        </li>
+        <li class="nav-item">
+            <a class="nav-link {% if report_type == 'baggage' %}active bg-primary{% else %}bg-white border text-dark{% endif %}" href="{{ url_for('admin.reports', type='baggage') }}">
+                <i class="bi bi-luggage me-1"></i> Baggage Logistics Report
+            </a>
+        </li>
+    </ul>
+
+    <!-- Report Table Container -->
+    <div class="fms-card p-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+            <div>
+                <h5 class="fw-bold mb-0 text-dark text-capitalize">{{ report_type }} Performance & Audit Report</h5>
+                <small class="text-muted">Generated: {{ now.strftime('%b %d, %Y %I:%M %p') }} UTC</small>
+            </div>
+            <span class="badge bg-light text-dark border">Records: {{ data|length }}</span>
+        </div>
+
+        {% if report_type == 'flights' %}
+            <div class="table-responsive">
+                <table class="fms-table">
+                    <thead>
+                        <tr>
+                            <th>Flight No</th>
+                            <th>Airline</th>
+                            <th>Origin</th>
+                            <th>Destination</th>
+                            <th>Departure</th>
+                            <th>Arrival</th>
+                            <th>Aircraft</th>
+                            <th>Available Seats</th>
+                            <th>Base Fare</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for f in data %}
+                        <tr>
+                            <td><span class="badge bg-primary font-monospace">{{ f.flight_number }}</span></td>
+                            <td>{{ f.airline_name }}</td>
+                            <td>{{ f.source }} ({{ f.source_code }})</td>
+                            <td>{{ f.destination }} ({{ f.destination_code }})</td>
+                            <td>{{ f.departure_time.strftime('%b %d, %I:%M %p') }}</td>
+                            <td>{{ f.arrival_time.strftime('%b %d, %I:%M %p') }}</td>
+                            <td>{{ f.aircraft.model if f.aircraft else 'N/A' }}</td>
+                            <td>{{ f.available_seats }} / {{ f.seats.count() }}</td>
+                            <td>{{ f.base_price|format_currency }}</td>
+                            <td><span class="badge {{ f.status_badge_class }}">{{ f.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% elif report_type == 'passengers' %}
+            <div class="table-responsive">
+                <table class="fms-table">
+                    <thead>
+                        <tr>
+                            <th>PNR Ref</th>
+                            <th>Passenger Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Flight</th>
+                            <th>Seat</th>
+                            <th>Fare</th>
+                            <th>Booking Date</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for b in data %}
+                        <tr>
+                            <td><span class="fw-bold font-monospace text-primary">{{ b.booking_reference }}</span></td>
+                            <td class="fw-bold">{{ b.passenger_name }}</td>
+                            <td>{{ b.passenger_email }}</td>
+                            <td>{{ b.passenger_phone }}</td>
+                            <td>{{ b.flight.flight_number }} ({{ b.flight.source_code }}&rarr;{{ b.flight.destination_code }})</td>
+                            <td>{{ b.seat.seat_number }} ({{ b.seat.seat_class }})</td>
+                            <td>{{ b.total_fare|format_currency }}</td>
+                            <td>{{ b.booking_date.strftime('%b %d, %Y') }}</td>
+                            <td><span class="badge {{ b.status_badge }}">{{ b.status }}</span></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% elif report_type == 'baggage' %}
+            <div class="table-responsive">
+                <table class="fms-table">
+                    <thead>
+                        <tr>
+                            <th>Baggage Tag</th>
+                            <th>PNR Reference</th>
+                            <th>Passenger</th>
+                            <th>Flight No</th>
+                            <th>Weight</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                            <th>Last Checkpoint Update</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for bg in data %}
+                        <tr>
+                            <td><span class="fw-bold font-monospace text-primary">{{ bg.baggage_tag }}</span></td>
+                            <td>{{ bg.booking.booking_reference if bg.booking else 'N/A' }}</td>
+                            <td>{{ bg.passenger.full_name if bg.passenger else 'N/A' }}</td>
+                            <td>{{ bg.booking.flight.flight_number if bg.booking else 'N/A' }}</td>
+                            <td>{{ bg.weight_kg }} kg</td>
+                            <td>{{ bg.baggage_type }}</td>
+                            <td><span class="badge {{ bg.status_badge_class }}">{{ bg.status }}</span></td>
+                            <td class="small text-muted">{{ bg.last_updated.strftime('%b %d, %I:%M %p') }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

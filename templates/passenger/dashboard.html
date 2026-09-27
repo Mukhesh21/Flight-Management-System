@@ -1,0 +1,241 @@
+{% extends 'base.html' %}
+
+{% block title %}Passenger Dashboard - SkyWings{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Welcome Header & Frequent Flyer Summary -->
+    <div class="fms-card p-4 mb-4 bg-primary text-white border-0 shadow-sm position-relative overflow-hidden">
+        <div class="row align-items-center">
+            <div class="col-lg-8">
+                <span class="badge bg-info text-dark px-3 py-1 rounded-pill fw-bold text-uppercase mb-2">Passenger Portal</span>
+                <h2 class="fw-bold mb-1">Welcome aboard, {{ user.full_name }}! 👋</h2>
+                <p class="text-white-50 mb-0">Manage your active flights, select preferred seats, track luggage live, and view e-tickets.</p>
+            </div>
+            <div class="col-lg-4 text-lg-end mt-3 mt-lg-0">
+                <div class="d-inline-block p-3 bg-white bg-opacity-10 rounded-3 border border-white-50 text-start">
+                    <div class="text-white-50 small">Frequent Flyer ID:</div>
+                    <div class="fw-bold text-warning fs-5">{{ user.passenger_profile.frequent_flyer_no if user.passenger_profile else 'FF-GUEST' }}</div>
+                    <small class="text-white-50"><i class="bi bi-shield-check text-success me-1"></i> SkyWings Silver Tier</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Stats -->
+    <div class="row g-3 mb-4">
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Active Bookings</div>
+                    <div class="stat-value text-primary">{{ active_bookings|length }}</div>
+                </div>
+                <div class="stat-icon bg-primary-subtle text-primary">
+                    <i class="bi bi-ticket-perforated-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Tracked Luggage</div>
+                    <div class="stat-value text-info">{{ baggage_items|length }}</div>
+                </div>
+                <div class="stat-icon bg-info-subtle text-info">
+                    <i class="bi bi-luggage-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Unread Alerts</div>
+                    <div class="stat-value text-warning">{{ unread_notifications_count }}</div>
+                </div>
+                <div class="stat-icon bg-warning-subtle text-warning">
+                    <i class="bi bi-bell-fill"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6">
+            <div class="stat-card">
+                <div>
+                    <div class="stat-label">Flight History</div>
+                    <div class="stat-value text-success">{{ (active_bookings|length) + (past_bookings|length) }}</div>
+                </div>
+                <div class="stat-icon bg-success-subtle text-success">
+                    <i class="bi bi-airplane-fill"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Left: Active Upcoming Flights & Bookings -->
+        <div class="col-lg-8">
+            <div class="fms-card mb-4">
+                <div class="fms-card-header">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-airplane-engines me-2 text-primary"></i>My Upcoming Flights</h5>
+                    <a href="{{ url_for('passenger.search') }}" class="btn btn-sm btn-outline-primary fw-semibold">
+                        <i class="bi bi-plus-lg me-1"></i> Book New Flight
+                    </a>
+                </div>
+                <div class="fms-card-body p-3">
+                    {% if active_bookings %}
+                        {% for b in active_bookings %}
+                        <div class="border rounded-3 p-3 mb-3 bg-light bg-opacity-50">
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <div>
+                                    <span class="badge bg-primary px-2 py-1 me-2">{{ b.flight.flight_number }}</span>
+                                    <span class="text-muted small">{{ b.flight.airline_name }}</span>
+                                </div>
+                                <div>
+                                    <span class="badge {{ b.status_badge }} px-2 py-1">{{ b.status }}</span>
+                                    {% if b.flight.status == 'Delayed' %}
+                                        <span class="badge bg-danger ms-1"><i class="bi bi-clock-history me-1"></i>Delayed</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+
+                            <div class="row g-2 align-items-center my-2">
+                                <div class="col-4">
+                                    <div class="fw-bold fs-5 text-dark">{{ b.flight.departure_time.strftime('%I:%M %p') }}</div>
+                                    <div class="fw-semibold text-primary">{{ b.flight.source_code }}</div>
+                                    <small class="text-muted">{{ b.flight.source }}</small>
+                                </div>
+                                <div class="col-4 text-center">
+                                    <div class="flight-duration-line">
+                                        <span class="duration-text">{{ b.flight.duration }}</span>
+                                        <div class="line"><i class="bi bi-arrow-right"></i></div>
+                                    </div>
+                                </div>
+                                <div class="col-4 text-end">
+                                    <div class="fw-bold fs-5 text-dark">{{ b.flight.arrival_time.strftime('%I:%M %p') }}</div>
+                                    <div class="fw-semibold text-primary">{{ b.flight.destination_code }}</div>
+                                    <small class="text-muted">{{ b.flight.destination }}</small>
+                                </div>
+                            </div>
+
+                            <div class="d-flex flex-wrap justify-content-between align-items-center border-top pt-2 mt-2 small text-muted">
+                                <div>
+                                    <span class="me-3"><i class="bi bi-calendar3 me-1"></i><strong>{{ b.flight.departure_time.strftime('%b %d, %Y') }}</strong></span>
+                                    <span class="me-3"><i class="bi bi-grid-fill me-1"></i>Seat: <strong>{{ b.seat.seat_number }}</strong></span>
+                                    <span><i class="bi bi-door-open me-1"></i>Gate: <strong>{{ b.flight.gate }}</strong> ({{ b.flight.terminal }})</span>
+                                </div>
+                                <div class="mt-2 mt-md-0 d-flex gap-2">
+                                    <a href="{{ url_for('passenger.view_booking', booking_ref=b.booking_reference) }}" class="btn btn-sm btn-fms-primary">
+                                        <i class="bi bi-ticket-perforated me-1"></i> E-Ticket & Pass
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-airplane text-muted fs-1 mb-2"></i>
+                            <h6 class="fw-bold text-dark">No upcoming flights scheduled</h6>
+                            <p class="text-muted small mb-3">Search our daily routes and book your next flight in seconds.</p>
+                            <a href="{{ url_for('passenger.search') }}" class="btn btn-fms-accent btn-sm px-4">
+                                <i class="bi bi-search me-1"></i> Search Flights Now
+                            </a>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Active Baggage Section -->
+            <div class="fms-card">
+                <div class="fms-card-header">
+                    <h5 class="fw-bold mb-0 text-dark"><i class="bi bi-luggage-fill me-2 text-info"></i>Baggage Status Tracker</h5>
+                    <a href="{{ url_for('passenger.track_baggage') }}" class="btn btn-sm btn-outline-info text-dark fw-semibold">
+                        Full Baggage Timeline <i class="bi bi-arrow-right ms-1"></i>
+                    </a>
+                </div>
+                <div class="fms-card-body p-3">
+                    {% if baggage_items %}
+                        <div class="table-responsive">
+                            <table class="fms-table">
+                                <thead>
+                                    <tr>
+                                        <th>Baggage Tag</th>
+                                        <th>Flight</th>
+                                        <th>Weight</th>
+                                        <th>Current Stage</th>
+                                        <th>Action</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for bg in baggage_items %}
+                                    <tr>
+                                        <td><span class="fw-bold text-primary font-monospace">{{ bg.baggage_tag }}</span></td>
+                                        <td>{{ bg.booking.flight.flight_number if bg.booking else 'N/A' }}</td>
+                                        <td>{{ bg.weight_kg }} kg</td>
+                                        <td><span class="badge {{ bg.status_badge_class }}">{{ bg.status }}</span></td>
+                                        <td>
+                                            <a href="{{ url_for('passenger.track_baggage', tag=bg.baggage_tag) }}" class="btn btn-sm btn-outline-secondary">
+                                                Track <i class="bi bi-geo-alt"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <p class="text-muted small text-center py-3 mb-0">No active luggage registered on your account.</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Sidebar: Quick Notifications & Featured Flights -->
+        <div class="col-lg-4">
+            <!-- Recent Alerts -->
+            <div class="fms-card mb-4">
+                <div class="fms-card-header">
+                    <h6 class="fw-bold mb-0"><i class="bi bi-bell-fill text-warning me-2"></i>Flight Alerts & Updates</h6>
+                    <a href="{{ url_for('passenger.notifications') }}" class="small text-decoration-none">View All</a>
+                </div>
+                <div class="fms-card-body p-3">
+                    {% if notifications %}
+                        {% for n in notifications %}
+                        <div class="notif-item {% if not n.is_read %}unread{% endif %} p-2 mb-2 border rounded">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="fw-bold small text-dark"><i class="bi {{ n.icon_class }} me-1"></i>{{ n.title }}</span>
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ n.created_at.strftime('%H:%M') }}</small>
+                            </div>
+                            <p class="small text-muted mb-1" style="font-size: 0.8rem;">{{ n.message|truncate(90) }}</p>
+                            {% if n.link_url %}
+                                <a href="{{ n.link_url }}" class="small text-primary fw-semibold" style="font-size: 0.75rem;">View Details &rarr;</a>
+                            {% endif %}
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted small text-center py-3 mb-0">No new alerts.</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Quick Flight Radar -->
+            <div class="fms-card bg-light">
+                <div class="fms-card-header bg-transparent">
+                    <h6 class="fw-bold mb-0 text-dark"><i class="bi bi-radar text-primary me-2"></i>Live Flight Radar</h6>
+                </div>
+                <div class="fms-card-body p-3">
+                    {% for f in featured_flights %}
+                    <div class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
+                        <div>
+                            <div class="fw-bold small">{{ f.flight_number }} ({{ f.source_code }} &rarr; {{ f.destination_code }})</div>
+                            <small class="text-muted">{{ f.departure_time.strftime('%I:%M %p') }} • Gate {{ f.gate }}</small>
+                        </div>
+                        <a href="{{ url_for('passenger.seat_select', flight_id=f.id) }}" class="btn btn-sm btn-outline-primary py-0 px-2" style="font-size: 0.75rem;">
+                            Book
+                        </a>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
